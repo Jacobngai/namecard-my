@@ -1,0 +1,57 @@
+{
+  "cli": {
+    "version": ">= 5.2.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug",
+        "credentialsSource": "remote"
+      },
+      "ios": {
+        "simulator": true,
+        "credentialsSource": "remote"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "credentialsSource": "remote"
+      },
+      "ios": {
+        "simulator": false,
+        "credentialsSource": "remote"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "credentialsSource": "remote",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "simulator": false,
+        "credentialsSource": "remote"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "production",
+        "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleId": "your-apple-id@example.com",
+        "ascAppId": "your-app-store-connect-app-id"
+      }
+    }
+  }
+}

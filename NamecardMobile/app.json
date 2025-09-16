@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "NAMECARD.MY",
+    "slug": "namecard-my",
+    "owner": "jacobai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3B82F6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.namecardmy.app",
+      "buildNumber": "1",
+      "icon": "./assets/icon/icon.png",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to camera to scan business cards.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to save and select business card images.",
+        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice notes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon/icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.namecardmy.app",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
+      ],
+      "buildType": "apk",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/icon/icon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-media-library",
+      "expo-audio",
+      "expo-file-system",
+      "expo-document-picker",
+      "expo-font"
+    ],
+    "description": "Smart Business Card Scanner & Contact Management App",
+    "primaryColor": "#3B82F6",
+    "backgroundColor": "#FFFFFF"
+  }
+}
