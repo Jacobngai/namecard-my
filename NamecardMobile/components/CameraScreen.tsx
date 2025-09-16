@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Contact } from '../types';
 import { GoogleVisionService } from '../services/googleVision';
 import { autoCropBusinessCard } from '../utils/imageProcessing';
+import { LocalStorage } from '../services/localStorage';
+import { ContactService } from '../services/contactService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -241,7 +243,7 @@ const styles = StyleSheet.create({
   },
   scanFrame: {
     width: width * 0.8,
-    height: width * 0.8 * 0.5, // Exactly matching the crop ratio
+    height: width * 0.8 * 0.6, // Increased height by 20% (from 0.5 to 0.6)
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',

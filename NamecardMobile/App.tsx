@@ -12,11 +12,13 @@ import { ContactList } from './components/ContactList';
 import { ProfileScreen } from './components/ProfileScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { Contact } from './types';
+import { ContactService } from './services/contactService';
 import { SupabaseService } from './services/supabase';
 import { AuthManager } from './services/authManager';
 import { ENV, validateEnv } from './config/env';
 import { AuthScreen } from './components/AuthScreen';
 import { SplashScreen } from './components/SplashScreen';
+import { ContactDetailModal } from './components/ContactDetailModal';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -31,6 +33,8 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSplash, setShowSplash] = useState(true);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [showContactDetail, setShowContactDetail] = useState(false);
 
   // Initialize app and validate environment
   useEffect(() => {
@@ -39,51 +43,38 @@ export default function App() {
 
   const initializeApp = async () => {
     try {
-      // Validate environment variables
+      // Validate environment variables (optional for offline mode)
       const { isValid, missingKeys } = validateEnv();
       if (!isValid) {
         console.warn('⚠️ Missing API keys:', missingKeys);
-        Alert.alert(
-          'Configuration Missing',
-          `Please configure the following API keys in your .env file:\n${missingKeys.join('\n')}`,
-          [{ text: 'OK' }]
-        );
+        console.warn('📱 Running in offline mode');
       }
 
-      // Verify and restore session
-      const { user, error } = await AuthManager.verifySession();
-      if (user && !error) {
-        setIsAuthenticated(true);
-        setCurrentUser(user);
+      // Initialize contact service (works offline)
+      await ContactService.init();
 
-        // Initialize Supabase storage
-        await SupabaseService.initializeStorage();
+      // Load contacts from local storage first
+      await loadContacts();
 
-        // Load contacts from Supabase
-        await loadContacts();
-
-        // Setup real-time sync
-        setupRealtimeSync();
-      }
-
-      // Setup auth state listener
-      const unsubscribe = AuthManager.setupAuthListener((user) => {
-        if (user) {
+      // Try to verify session (non-blocking)
+      try {
+        const { user, error } = await AuthManager.verifySession();
+        if (user && !error) {
           setIsAuthenticated(true);
           setCurrentUser(user);
-          // Reload contacts when auth state changes
-          loadContacts();
+          console.log('✅ User authenticated, sync enabled');
         } else {
-          setIsAuthenticated(false);
-          setCurrentUser(null);
-          setContacts([]);
+          console.log('📱 Running in guest mode');
         }
-      });
+      } catch (authError) {
+        console.log('📱 Auth check failed, continuing in offline mode');
+      }
 
       setIsInitialized(true);
     } catch (error) {
-      console.error('❌ App initialization failed:', error);
-      Alert.alert('Initialization Error', 'Failed to initialize app. Please check your configuration.');
+      console.error('⚠️ App initialization warning:', error);
+      // Continue without crashing
+      setIsInitialized(true);
     } finally {
       setIsLoading(false);
     }
@@ -91,39 +82,46 @@ export default function App() {
 
   const loadContacts = async () => {
     try {
-      const contactsData = await SupabaseService.getContacts();
+      const contactsData = await ContactService.getContacts();
       setContacts(contactsData);
-      console.log('✅ Loaded contacts from Supabase:', contactsData.length);
+      console.log('✅ Loaded contacts:', contactsData.length);
     } catch (error) {
-      console.error('❌ Failed to load contacts:', error);
-      // Continue with empty contacts array
+      console.error('⚠️ Failed to load contacts:', error);
+      // Always fallback to empty array
       setContacts([]);
     }
   };
 
   const setupRealtimeSync = () => {
-    const subscription = SupabaseService.subscribeToContacts(
-      // On insert
-      (newContact) => {
-        setContacts(prev => [newContact, ...prev]);
-        console.log('🔄 New contact synced:', newContact.name);
-      },
-      // On update  
-      (updatedContact) => {
-        setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
-        console.log('🔄 Contact updated:', updatedContact.name);
-      },
-      // On delete
-      (deletedId) => {
-        setContacts(prev => prev.filter(c => c.id !== deletedId));
-        console.log('🔄 Contact deleted:', deletedId);
-      }
-    );
+    // Realtime sync is optional - only if authenticated
+    if (isAuthenticated) {
+      try {
+        const subscription = SupabaseService.subscribeToContacts(
+          // On insert
+          (newContact) => {
+            setContacts(prev => [newContact, ...prev]);
+            console.log('🔄 New contact synced:', newContact.name);
+          },
+          // On update
+          (updatedContact) => {
+            setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+            console.log('🔄 Contact updated:', updatedContact.name);
+          },
+          // On delete
+          (deletedId) => {
+            setContacts(prev => prev.filter(c => c.id !== deletedId));
+            console.log('🔄 Contact deleted:', deletedId);
+          }
+        );
 
-    // Cleanup subscription on unmount
-    return () => {
-      subscription.unsubscribe();
-    };
+        // Cleanup subscription on unmount
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.log('⚠️ Realtime sync not available:', error);
+      }
+    }
   };
 
   const handleScanCard = (cardData: Partial<Contact>) => {
@@ -138,71 +136,65 @@ export default function App() {
 
   const handleSaveContact = async (contactData: Partial<Contact>) => {
     try {
-      console.log('💾 Saving contact to Supabase:', contactData);
-      
-      // Save to Supabase
-      const newContact = await SupabaseService.createContact(contactData);
-      
+      console.log('💾 Saving contact:', contactData);
+
+      // Save using ContactService (offline-first)
+      const newContact = await ContactService.createContact(contactData);
+
       console.log('✅ Contact saved successfully:', newContact);
-      
-      // Update local state (real-time sync will also update this)
+
+      // Update local state
       setContacts(prev => [newContact, ...prev]);
-      
+
       // Clear scanned data and pending image
       setScannedCardData(null);
       setPendingImageUri(undefined);
       setShouldProcessOCR(false);
 
-      // Show non-blocking success message (consider using Toast in production)
+      // Show non-blocking success message
       setTimeout(() => {
-        Alert.alert('Success', `Contact "${newContact.name}" saved successfully!`,
+        Alert.alert('Success', `Contact "${newContact.name}" saved!`,
           [{ text: 'OK', style: 'default' }],
           { cancelable: true }
         );
       }, 500);
-      
+
     } catch (error) {
-      console.error('❌ Failed to save contact:', error);
-      
+      console.error('Failed to save contact:', error);
+
+      // This should rarely happen with offline-first approach
       const errorMessage = error instanceof Error ? error.message : 'Failed to save contact';
       Alert.alert(
         'Save Failed',
         errorMessage,
-        [
-          { text: 'Try Again', style: 'default' },
-          { 
-            text: 'Save Locally', 
-            style: 'cancel',
-            onPress: () => {
-              // Fallback to local storage
-              const fallbackContact: Contact = {
-                id: `local_${Date.now()}`,
-                name: contactData.name || '',
-                company: contactData.company || '',
-                phone: contactData.phone || '',
-                email: contactData.email || '',
-                address: contactData.address || '',
-                imageUrl: contactData.imageUrl || '',
-                addedDate: new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                }),
-              };
-              setContacts(prev => [fallbackContact, ...prev]);
-              setScannedCardData(null);
-              setPendingImageUri(undefined);
-              setShouldProcessOCR(false);
-            }
-          }
-        ]
+        [{ text: 'OK', style: 'default' }]
       );
     }
   };
 
   const handleContactSelect = (contact: Contact) => {
-    // Navigate to contact detail (to be implemented)
-    console.log('Selected contact:', contact.name);
+    setSelectedContact(contact);
+    setShowContactDetail(true);
+  };
+
+  const handleContactDelete = async (contactId: string) => {
+    try {
+      // Remove from local state
+      setContacts(prevContacts => prevContacts.filter(c => c.id !== contactId));
+      console.log('✅ Contact deleted:', contactId);
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+      Alert.alert('Error', 'Failed to delete contact');
+    }
+  };
+
+  const handleContactEdit = (contact: Contact) => {
+    // Close modal and navigate to edit form
+    setShowContactDetail(false);
+    setScannedCardData(contact);
+    setPendingImageUri(contact.imageUrl);
+    setShouldProcessOCR(false);
+    // The navigation will happen automatically when scannedCardData is set
   };
 
   const handleAutoProcess = async (imageUri: string) => {
@@ -228,8 +220,8 @@ export default function App() {
         return;
       }
 
-      // Save contact
-      const newContact = await SupabaseService.createContact({
+      // Save contact (offline-first)
+      const newContact = await ContactService.createContact({
         ...ocrData,
         imageUrl: imageUri,
       });
@@ -507,6 +499,18 @@ export default function App() {
           options={{ title: 'Profile' }}
         />
       </Tab.Navigator>
+
+      {/* Contact Detail Modal */}
+      <ContactDetailModal
+        contact={selectedContact}
+        visible={showContactDetail}
+        onClose={() => {
+          setShowContactDetail(false);
+          setSelectedContact(null);
+        }}
+        onDelete={handleContactDelete}
+        onEdit={handleContactEdit}
+      />
     </NavigationContainer>
   );
 }

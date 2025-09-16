@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Contact } from '../types';
-import { SupabaseService } from '../services/supabase';
+import { ContactService } from '../services/contactService';
 
 interface ContactListProps {
   contacts: Contact[];
@@ -61,9 +61,11 @@ export function ContactList({ contacts, onContactSelect }: ContactListProps) {
         // Open WhatsApp
         await Linking.openURL(whatsappUrl);
         
-        // Update last contact timestamp in Supabase
+        // Update last contact timestamp (offline-first)
         try {
-          await SupabaseService.updateLastContact(contact.id);
+          await ContactService.updateContact(contact.id, {
+            lastContact: new Date().toISOString()
+          });
           console.log('✅ Last contact timestamp updated for:', contact.name);
         } catch (updateError) {
           console.warn('⚠️ Failed to update last contact timestamp:', updateError);

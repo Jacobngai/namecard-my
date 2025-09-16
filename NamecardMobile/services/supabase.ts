@@ -1,8 +1,7 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
-import { ENV } from '../config/env';
 import { Contact } from '../types';
 import { AuthManager } from './authManager';
+import { getSupabaseClient } from './supabaseClient';
 
 // Database types based on our new schema
 interface DatabaseContact {
@@ -28,29 +27,11 @@ interface DatabaseContact {
 }
 
 export class SupabaseService {
-  private static client: SupabaseClient | null = null;
-
   /**
-   * Initialize Supabase client
+   * Get Supabase client
    */
-  static getClient(): SupabaseClient {
-    if (!this.client) {
-      if (!ENV.SUPABASE_URL || !ENV.SUPABASE_ANON_KEY) {
-        throw new Error('Missing Supabase configuration');
-      }
-
-      this.client = createClient(
-        ENV.SUPABASE_URL,
-        ENV.SUPABASE_ANON_KEY,
-        {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-          },
-        }
-      );
-    }
-    return this.client;
+  static getClient() {
+    return getSupabaseClient();
   }
 
   /**

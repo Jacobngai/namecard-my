@@ -1,5 +1,5 @@
 import { Audio, AudioMode, RecordingOptions, Recording } from 'expo-audio';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { ENV } from '../config/env';
 
 interface WhisperResponse {

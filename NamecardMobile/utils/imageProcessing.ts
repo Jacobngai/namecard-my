@@ -27,9 +27,9 @@ export async function autoCropBusinessCard(imageUri: string): Promise<CropResult
     console.log(`📐 Original image dimensions: ${image.width}x${image.height}`);
 
     // Frame dimensions on screen (matching CameraScreen.tsx)
-    // The frame is 80% of screen width and 50% of that width for height
+    // The frame is 80% of screen width and 60% of that width for height (increased by 20%)
     const FRAME_WIDTH_RATIO = 0.8;
-    const FRAME_HEIGHT_RATIO = 0.5;
+    const FRAME_HEIGHT_RATIO = 0.6;
 
     // Calculate the frame position relative to the full camera view
     // The frame is centered on screen

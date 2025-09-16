@@ -109,9 +109,9 @@ export class EnhancedOCRParser {
       }
 
       // Extract phones with type detection
-      // Updated regex to handle international format like +886-919-388-269
-      const internationalPhoneRegex = /(\+?\d{1,3}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{3,4})/;
-      const standardPhoneRegex = /([0-9]{2,3}[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{4})/;
+      // Updated regex to handle international format like +6014.6391.394 and +886-919-388-269
+      const internationalPhoneRegex = /(\+?\d{1,4}[-.\s]?\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{0,4})/;
+      const standardPhoneRegex = /([0-9]{2,4}[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{3,4})/;
 
       // Check for mobile with number indicator (Mobile 1, Mobile 2, HP 2, etc.)
       if (/mobile\s*[12]|hp\s*[12]/i.test(line)) {
@@ -194,8 +194,8 @@ export class EnhancedOCRParser {
     // Create cleaned lines array (without phone/email lines)
     const cleanedLines = lines.filter((_, index) => !linesToRemove.has(index));
 
-    // Extract name (usually in top 30% of cleaned text)
-    const nameRegion = cleanedLines.slice(0, Math.ceil(cleanedLines.length * 0.4));
+    // Extract name (usually in top 40% of cleaned text)
+    const nameRegion = cleanedLines.slice(0, Math.ceil(cleanedLines.length * 0.5));
 
     // Look for Chinese name first
     let chineseName = '';
@@ -267,6 +267,20 @@ export class EnhancedOCRParser {
         if (line !== result.name && line !== result.jobTitle) {
           result.company = this.cleanCompany(line);
           result.confidence.company = 0.8;
+          break;
+        }
+      }
+    }
+
+    // If no company found yet, look for lines with trademark symbols or all caps
+    if (!result.company) {
+      for (const line of cleanedLines) {
+        // Check for trademark symbols or all uppercase (common for company names)
+        if ((line.includes('™') || line.includes('®') || line.includes('©') ||
+             /^[A-Z][A-Z\s]{2,}/.test(line)) &&
+            line !== result.name && line !== result.jobTitle) {
+          result.company = this.cleanCompany(line);
+          result.confidence.company = 0.7;
           break;
         }
       }

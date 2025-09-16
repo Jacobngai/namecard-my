@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -10,45 +10,54 @@ interface TopLoaderProps {
 }
 
 export function TopLoader({ isLoading, progress, color = '#2563EB' }: TopLoaderProps) {
-  const animatedWidth = useRef(new Animated.Value(0)).current;
+  const animatedProgress = useRef(new Animated.Value(0)).current;
+  const animatedOpacity = useRef(new Animated.Value(0)).current;
   const indeterminateAnimation = useRef<Animated.CompositeAnimation | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
+      setIsVisible(true);
+      Animated.timing(animatedOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+
       if (progress !== undefined) {
         // Determinate progress
         if (indeterminateAnimation.current) {
           indeterminateAnimation.current.stop();
           indeterminateAnimation.current = null;
         }
-        Animated.timing(animatedWidth, {
-          toValue: progress * width,
+        Animated.timing(animatedProgress, {
+          toValue: progress,
           duration: 300,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }).start();
       } else {
         // Indeterminate progress
         indeterminateAnimation.current = Animated.loop(
           Animated.sequence([
-            Animated.timing(animatedWidth, {
-              toValue: width * 0.3,
+            Animated.timing(animatedProgress, {
+              toValue: 0.3,
               duration: 800,
-              useNativeDriver: false,
+              useNativeDriver: true,
             }),
-            Animated.timing(animatedWidth, {
-              toValue: width * 0.8,
+            Animated.timing(animatedProgress, {
+              toValue: 0.8,
               duration: 600,
-              useNativeDriver: false,
+              useNativeDriver: true,
             }),
-            Animated.timing(animatedWidth, {
-              toValue: width,
+            Animated.timing(animatedProgress, {
+              toValue: 1,
               duration: 400,
-              useNativeDriver: false,
+              useNativeDriver: true,
             }),
-            Animated.timing(animatedWidth, {
+            Animated.timing(animatedProgress, {
               toValue: 0,
               duration: 0,
-              useNativeDriver: false,
+              useNativeDriver: true,
             }),
           ])
         );
@@ -61,36 +70,46 @@ export function TopLoader({ isLoading, progress, color = '#2563EB' }: TopLoaderP
         indeterminateAnimation.current = null;
       }
       Animated.sequence([
-        Animated.timing(animatedWidth, {
-          toValue: width,
+        Animated.timing(animatedProgress, {
+          toValue: 1,
           duration: 200,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
-        Animated.timing(animatedWidth, {
+        Animated.timing(animatedOpacity, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        setIsVisible(false);
+        animatedProgress.setValue(0);
+      });
     }
-  }, [isLoading, progress, animatedWidth]);
+  }, [isLoading, progress, animatedProgress, animatedOpacity]);
 
-  if (!isLoading && animatedWidth._value === 0) {
+  if (!isVisible) {
     return null;
   }
 
+  const translateX = animatedProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width, 0],
+  });
+
   return (
-    <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.progressBar,
-          {
-            width: animatedWidth,
-            backgroundColor: color,
-          },
-        ]}
-      />
-    </View>
+    <Animated.View style={[styles.container, { opacity: animatedOpacity }]}>
+      <View style={styles.progressBarContainer}>
+        <Animated.View
+          style={[
+            styles.progressBar,
+            {
+              backgroundColor: color,
+              transform: [{ translateX }],
+            },
+          ]}
+        />
+      </View>
+    </Animated.View>
   );
 }
 
@@ -104,8 +123,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     zIndex: 9999,
   },
-  progressBar: {
+  progressBarContainer: {
     height: '100%',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  progressBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '100%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SupabaseService } from './supabase';
+import { getSupabaseClient } from './supabaseClient';
 
 interface AuthSession {
   user: any;
@@ -17,7 +17,7 @@ export class AuthManager {
    */
   static async verifySession(): Promise<{ user: any; error: any }> {
     try {
-      const client = SupabaseService.getClient();
+      const client = getSupabaseClient();
 
       // First, try to get the current session
       const { data: { session }, error: sessionError } = await client.auth.getSession();
@@ -162,7 +162,7 @@ export class AuthManager {
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
 
           // Try to refresh the session
-          const client = SupabaseService.getClient();
+          const client = getSupabaseClient();
           const { data, error: refreshError } = await client.auth.refreshSession();
 
           if (!refreshError && data.session) {
