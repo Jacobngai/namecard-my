@@ -16,7 +16,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Contact } from '../types';
 import { TopLoader } from './TopLoader';
-import { GoogleVisionService } from '../services/googleVision';
+import { GeminiOCRService } from '../services/geminiOCR';
 
 interface ContactFormProps {
   scannedData: Partial<Contact> | null;
@@ -66,8 +66,8 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
         setOcrProgress(prev => Math.min(prev + 0.1, 0.8));
       }, 200);
 
-      // Process OCR
-      const ocrData = await GoogleVisionService.processBusinessCard(imageUri);
+      // Process OCR using Gemini 2.0 Flash
+      const ocrData = await GeminiOCRService.processBusinessCard(imageUri);
 
       clearInterval(progressInterval);
       setOcrProgress(0.9);

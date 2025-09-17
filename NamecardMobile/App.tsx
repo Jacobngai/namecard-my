@@ -188,6 +188,24 @@ export default function App() {
     }
   };
 
+  const handleBulkContactDelete = async (contactIds: string[]) => {
+    try {
+      // Delete multiple contacts
+      for (const contactId of contactIds) {
+        await ContactService.deleteContact(contactId);
+      }
+
+      // Remove from local state
+      setContacts(prevContacts => prevContacts.filter(c => !contactIds.includes(c.id)));
+      console.log(`✅ ${contactIds.length} contacts deleted`);
+
+      Alert.alert('Success', `${contactIds.length} contact${contactIds.length > 1 ? 's' : ''} deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete contacts:', error);
+      Alert.alert('Error', 'Failed to delete contacts');
+    }
+  };
+
   const handleContactEdit = (contact: Contact) => {
     // Close modal and navigate to edit form
     setShowContactDetail(false);
@@ -202,7 +220,7 @@ export default function App() {
       console.log('🚀 Auto-processing card...');
 
       // Import services
-      const { GoogleVisionService } = require('./services/googleVision');
+      const { GeminiOCRService } = require('./services/geminiOCR');
 
       // Show processing notification
       Alert.alert(
@@ -212,8 +230,8 @@ export default function App() {
         { cancelable: false }
       );
 
-      // Process OCR
-      const ocrData = await GoogleVisionService.processBusinessCard(imageUri);
+      // Process OCR using Gemini 2.0 Flash
+      const ocrData = await GeminiOCRService.processBusinessCard(imageUri);
 
       if (!ocrData.name) {
         Alert.alert('No Name Detected', 'Could not extract name from the card. Please try again.');
@@ -358,11 +376,25 @@ export default function App() {
 
   // Contacts Stack Navigator
   function ContactsStack() {
+    const ContactsNavigator = createStackNavigator();
+
     return (
-      <ContactList
-        contacts={contacts}
-        onContactSelect={handleContactSelect}
-      />
+      <ContactsNavigator.Navigator screenOptions={{ headerShown: false }}>
+        <ContactsNavigator.Screen name="ContactList">
+          {() => (
+            <ContactList
+              contacts={contacts}
+              onContactSelect={handleContactSelect}
+              onAddContact={() => {
+                // Navigate to Camera tab
+                // Note: This requires access to navigation prop from parent
+                console.log('Navigate to Add Contact');
+              }}
+              onDeleteContacts={handleBulkContactDelete}
+            />
+          )}
+        </ContactsNavigator.Screen>
+      </ContactsNavigator.Navigator>
     );
   }
 

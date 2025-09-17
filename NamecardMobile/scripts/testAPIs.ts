@@ -5,7 +5,7 @@
  * Run this to validate your API keys and configurations.
  */
 
-import { GoogleVisionService } from '../services/googleVision';
+import { GeminiOCRService } from '../services/geminiOCR';
 import { SupabaseService } from '../services/supabase';
 import { OpenAIService } from '../services/openai';
 import { ENV, validateEnv } from '../config/env';
@@ -26,8 +26,8 @@ class APITester {
     // Environment validation
     await this.runTest('Environment Variables', this.testEnvironment.bind(this));
 
-    // Google Vision API tests
-    await this.runTest('Google Vision API Key', this.testGoogleVisionKey.bind(this));
+    // Gemini OCR API tests
+    await this.runTest('Gemini API Key', this.testGeminiApiKey.bind(this));
 
     // Supabase tests
     await this.runTest('Supabase Connection', this.testSupabaseConnection.bind(this));
@@ -79,21 +79,22 @@ class APITester {
 
     // Log configuration status (without revealing keys)
     console.log('📋 Environment Configuration:');
-    console.log(`   Google Vision API: ${ENV.GOOGLE_VISION_API_KEY ? '✓' : '✗'}`);
+    console.log(`   Gemini API: ${ENV.GEMINI_API_KEY ? '✓' : '✗'}`);
     console.log(`   Supabase URL: ${ENV.SUPABASE_URL ? '✓' : '✗'}`);
     console.log(`   Supabase Key: ${ENV.SUPABASE_ANON_KEY ? '✓' : '✗'}`);
     console.log(`   OpenAI API: ${ENV.OPENAI_API_KEY ? '✓' : '✗'}`);
   }
 
-  private async testGoogleVisionKey(): Promise<void> {
-    const isValid = await GoogleVisionService.validateApiKey();
-    
+  private async testGeminiApiKey(): Promise<void> {
+    const isValid = await GeminiOCRService.validateApiKey();
+
     if (!isValid) {
-      throw new Error('Google Vision API key is invalid or Vision API is not enabled');
+      throw new Error('Gemini API key is invalid or API is not accessible');
     }
 
-    console.log('   ✓ API key is valid');
-    console.log('   ✓ Cloud Vision API is accessible');
+    const serviceInfo = GeminiOCRService.getServiceInfo();
+    console.log(`   ✓ API key is valid`);
+    console.log(`   ✓ ${serviceInfo.name} (${serviceInfo.model}) is accessible`);
   }
 
   private async testSupabaseConnection(): Promise<void> {

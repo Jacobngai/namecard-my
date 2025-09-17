@@ -15,13 +15,18 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Contact } from '../types';
 import { ContactService } from '../services/contactService';
+import { FloatingActionButton } from './FloatingActionButton';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 interface ContactListProps {
   contacts: Contact[];
   onContactSelect: (contact: Contact) => void;
+  onAddContact: () => void;
+  onDeleteContacts?: (contactIds: string[]) => void;
 }
 
-export function ContactList({ contacts, onContactSelect }: ContactListProps) {
+export function ContactList({ contacts, onContactSelect, onAddContact, onDeleteContacts }: ContactListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -80,10 +85,102 @@ export function ContactList({ contacts, onContactSelect }: ContactListProps) {
     }
   };
 
-  const handleExportExcel = () => {
-    Alert.alert('Export', `Exporting ${selectedContacts.length} contacts to Excel...`);
+  const handleExportExcel = async () => {
+    try {
+      const selectedContactsData = contacts.filter(c => selectedContacts.includes(c.id));
+
+      // Create CSV content
+      const csvHeader = 'Name,Job Title,Company,Email,Phone,Mobile 2,Address,Website,Notes\n';
+      const csvRows = selectedContactsData.map(contact => {
+        const row = [
+          contact.name || '',
+          contact.jobTitle || '',
+          contact.company || '',
+          contact.email || '',
+          contact.phones?.mobile1 || contact.phone || '',
+          contact.phones?.mobile2 || '',
+          contact.address || '',
+          contact.website || '',
+          contact.notes || ''
+        ].map(field => `"${field.replace(/"/g, '""')}"`).join(',');
+        return row;
+      }).join('\n');
+
+      const csvContent = csvHeader + csvRows;
+
+      // Save to file
+      const filename = `contacts_export_${new Date().getTime()}.csv`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      // Share the file
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export Contacts',
+        });
+      } else {
+        Alert.alert('Success', `Exported ${selectedContacts.length} contacts to ${filename}`);
+      }
+
+      setIsSelectMode(false);
+      setSelectedContacts([]);
+    } catch (error) {
+      console.error('Export failed:', error);
+      Alert.alert('Error', 'Failed to export contacts');
+    }
+  };
+
+  const handleDeleteContacts = () => {
+    Alert.alert(
+      'Delete Contacts',
+      `Are you sure you want to delete ${selectedContacts.length} contact${selectedContacts.length > 1 ? 's' : ''}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            if (onDeleteContacts) {
+              onDeleteContacts(selectedContacts);
+            }
+            setIsSelectMode(false);
+            setSelectedContacts([]);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleAddToGroup = () => {
+    Alert.alert('Add to Group', `Adding ${selectedContacts.length} contacts to group...`);
+    // TODO: Implement group functionality
     setIsSelectMode(false);
     setSelectedContacts([]);
+  };
+
+  const handleShareMyCard = () => {
+    Alert.alert('Share My Card', 'Sharing your business card...');
+    // TODO: Implement share functionality
+  };
+
+  const handleAddManually = () => {
+    onAddContact();
+  };
+
+  const handleScanCard = () => {
+    onAddContact();
+  };
+
+  const handleSelectAll = () => {
+    if (selectedContacts.length === filteredContacts.length) {
+      setSelectedContacts([]);
+    } else {
+      setSelectedContacts(filteredContacts.map(c => c.id));
+    }
   };
 
   const exitSelectMode = () => {
@@ -175,27 +272,73 @@ export function ContactList({ contacts, onContactSelect }: ContactListProps) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {isSelectMode ? `${selectedContacts.length} selected` : 'Contacts'}
-        </Text>
-        {isSelectMode && (
-          <TouchableOpacity onPress={exitSelectMode}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
+        {isSelectMode ? (
+          <>
+            <TouchableOpacity onPress={exitSelectMode}>
+              <Ionicons name="arrow-back" size={24} color="#374151" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {selectedContacts.length} selected
+            </Text>
+            <TouchableOpacity onPress={handleSelectAll}>
+              <Text style={styles.selectAllText}>
+                {selectedContacts.length === filteredContacts.length ? 'Unselect all' : 'Select all'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity>
+              <Ionicons name="menu" size={24} color="#374151" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Contacts</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsSelectMode(true);
+              }}
+            >
+              <Text style={styles.selectText}>Select</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
 
-      {/* Search bar */}
+      {/* Search bar and filters */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
           <Input
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search contacts..."
+            placeholder="Search cards"
             style={styles.searchInput}
           />
         </View>
+      </View>
+
+      {/* Filter pills */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity style={styles.filterPill}>
+          <Ionicons name="filter" size={16} color="#6B7280" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterPill}>
+          <Text style={styles.filterText}>Sort by</Text>
+          <Ionicons name="chevron-down" size={16} color="#6B7280" style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterPill}>
+          <Ionicons name="add" size={16} color="#6B7280" />
+          <Text style={styles.filterText}>New Group</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Contact count */}
+      <View style={styles.countContainer}>
+        <Text style={styles.countText}>{filteredContacts.length} cards</Text>
+        {isSelectMode && selectedContacts.length === 0 && (
+          <TouchableOpacity onPress={handleSelectAll}>
+            <Text style={styles.selectAllLink}>Select all</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Contact list */}
@@ -208,16 +351,17 @@ export function ContactList({ contacts, onContactSelect }: ContactListProps) {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Export button */}
-      {isSelectMode && selectedContacts.length > 0 && (
-        <View style={styles.exportContainer}>
-          <Button
-            title={`Export ${selectedContacts.length} contacts`}
-            onPress={handleExportExcel}
-            style={styles.exportButton}
-          />
-        </View>
-      )}
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        isSelectMode={isSelectMode}
+        selectedCount={selectedContacts.length}
+        onExport={handleExportExcel}
+        onDelete={handleDeleteContacts}
+        onAddToGroup={handleAddToGroup}
+        onShareMyCard={handleShareMyCard}
+        onAddManually={handleAddManually}
+        onScanCard={handleScanCard}
+      />
     </SafeAreaView>
   );
 }
@@ -232,7 +376,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -324,9 +468,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   checkboxInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#D1D5DB',
     justifyContent: 'center',
@@ -335,6 +479,53 @@ const styles = StyleSheet.create({
   checkboxSelected: {
     backgroundColor: '#2563EB',
     borderColor: '#2563EB',
+  },
+  selectText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  selectAllText: {
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
+  selectAllLink: {
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+  },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 4,
+  },
+  countContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  countText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   cardThumbnail: {
     marginRight: 12,
@@ -381,22 +572,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#25D366',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  exportContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: 16,
-    right: 16,
-  },
-  exportButton: {
-    backgroundColor: '#2563EB',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
   },
 });

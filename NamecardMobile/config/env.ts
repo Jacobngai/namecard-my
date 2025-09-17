@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 
 // Environment configuration with proper typing
 interface EnvConfig {
-  GOOGLE_VISION_API_KEY: string;
+  GEMINI_API_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   OPENAI_API_KEY: string;
@@ -17,7 +17,7 @@ const getEnvVar = (name: string, fallback: string = ''): string => {
 
 // Export environment configuration
 export const ENV: EnvConfig = {
-  GOOGLE_VISION_API_KEY: getEnvVar('GOOGLE_VISION_API_KEY'),
+  GEMINI_API_KEY: getEnvVar('GEMINI_API_KEY', 'AIzaSyD5XdQMEppG55KMPIK2xhe4M7Rd04J9jFE'), // Hardcoded for now
   SUPABASE_URL: getEnvVar('SUPABASE_URL'),
   SUPABASE_ANON_KEY: getEnvVar('SUPABASE_ANON_KEY'),
   OPENAI_API_KEY: getEnvVar('OPENAI_API_KEY'),
@@ -28,8 +28,8 @@ export const ENV: EnvConfig = {
 // Validation function to check if all required keys are present
 export const validateEnv = (): { isValid: boolean; missingKeys: string[] } => {
   const requiredKeys = [
-    'GOOGLE_VISION_API_KEY',
-    'SUPABASE_URL', 
+    'GEMINI_API_KEY',
+    'SUPABASE_URL',
     'SUPABASE_ANON_KEY',
     'OPENAI_API_KEY'
   ];

@@ -12,7 +12,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Contact } from '../types';
-import { GoogleVisionService } from '../services/googleVision';
+import { GeminiOCRService } from '../services/geminiOCR';
 import { autoCropBusinessCard } from '../utils/imageProcessing';
 import { LocalStorage } from '../services/localStorage';
 import { ContactService } from '../services/contactService';
