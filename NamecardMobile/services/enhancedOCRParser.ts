@@ -1,3 +1,5 @@
+import { normalizePhoneNumber } from '../utils/phoneFormatter';
+
 export interface ParsedBusinessCard {
   name: string;
   jobTitle: string;
@@ -410,8 +412,9 @@ export class EnhancedOCRParser {
   }
 
   private static cleanPhoneNumber(phone: string): string {
-    // Standardize phone format
-    return phone.replace(/[\s.]/g, '-').replace(/--+/g, '-');
+    // Normalize to international format with +60 country code
+    // This ensures all phone numbers are WhatsApp-ready
+    return normalizePhoneNumber(phone, '+60');
   }
 
   private static cleanName(name: string): string {

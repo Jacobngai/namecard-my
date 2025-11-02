@@ -1,6 +1,9 @@
-import { Audio, AudioMode, RecordingOptions, Recording } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import { ENV } from '../config/env';
+
+// Type for recording
+type Recording = Audio.Recording;
 
 interface WhisperResponse {
   text: string;
@@ -54,31 +57,8 @@ export class OpenAIService {
         playsInSilentModeIOS: true,
       });
 
-      const recordingOptions: RecordingOptions = {
-        android: {
-          extension: '.m4a',
-          outputFormat: 'mpeg4',
-          audioEncoder: 'aac',
-          sampleRate: 44100,
-          numberOfChannels: 2,
-          bitRate: 128000,
-        },
-        ios: {
-          extension: '.m4a',
-          outputFormat: 'applem4a',
-          audioQuality: 'high',
-          sampleRate: 44100,
-          numberOfChannels: 2,
-          bitRate: 128000,
-        },
-        web: {
-          mimeType: 'audio/webm',
-          bitsPerSecond: 128000,
-        },
-      };
-
       const { recording } = await Audio.Recording.createAsync(
-        recordingOptions
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
 
       return recording;
@@ -299,111 +279,6 @@ Only include tags that are clearly relevant to business networking.
     } catch (error) {
       console.error('❌ Voice note creation failed:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Enhance business card OCR results using GPT
-   */
-  static async enhanceOCRResults(rawText: string): Promise<{
-    name: string;
-    company: string;
-    phone: string;
-    email: string;
-    address: string;
-    confidence: number;
-  }> {
-    try {
-      if (!ENV.OPENAI_API_KEY) {
-        // Fallback to basic parsing if no API key
-        return {
-          name: '',
-          company: '',
-          phone: '',
-          email: '',
-          address: '',
-          confidence: 0,
-        };
-      }
-
-      const prompt = `
-Parse this business card text and extract contact information:
-
-"${rawText}"
-
-Return ONLY a JSON object with these exact fields:
-{
-  "name": "full name or empty string",
-  "company": "company name or empty string", 
-  "phone": "phone number or empty string",
-  "email": "email address or empty string",
-  "address": "full address or empty string",
-  "confidence": 0-100 (how confident you are in the extraction)
-}
-
-Rules:
-- Use empty strings for missing information
-- Clean up phone numbers but keep original format
-- Extract the most likely person's name (usually first line)
-- Company is typically second line or has keywords like Inc, Corp, LLC
-- Be conservative with confidence scoring
-`;
-
-      const response = await fetch(this.CHAT_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${ENV.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-          max_tokens: 300,
-          temperature: 0.1,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('GPT API error');
-      }
-
-      const data: ChatCompletionResponse = await response.json();
-      const content = data.choices[0]?.message?.content?.trim();
-
-      if (!content) {
-        throw new Error('No response from GPT');
-      }
-
-      try {
-        const parsed = JSON.parse(content);
-        return {
-          name: parsed.name || '',
-          company: parsed.company || '',
-          phone: parsed.phone || '',
-          email: parsed.email || '',
-          address: parsed.address || '',
-          confidence: Math.min(Math.max(parsed.confidence || 0, 0), 100),
-        };
-      } catch (parseError) {
-        console.warn('⚠️ Failed to parse GPT OCR enhancement:', content);
-        throw new Error('Failed to parse AI response');
-      }
-    } catch (error) {
-      console.error('❌ OCR enhancement failed:', error);
-      // Return empty result on failure
-      return {
-        name: '',
-        company: '',
-        phone: '',
-        email: '',
-        address: '',
-        confidence: 0,
-      };
     }
   }
 

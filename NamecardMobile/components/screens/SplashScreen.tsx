@@ -7,7 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AnimatedLogo } from './Logo';
+import { AnimatedLogo } from '../common/Logo';
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,7 +57,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   return (
     <LinearGradient
-      colors={['#3B82F6', '#8B5CF6']}
+      colors={['#2563EB', '#0D9488', '#10B981']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={styles.container}
     >
       <Animated.View
@@ -74,15 +76,19 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       >
         <View style={styles.logoWrapper}>
           <AnimatedLogo
-            width={180}
-            height={180}
+            width={200}
+            height={200}
             forceTheme="light"
           />
         </View>
 
         <View style={styles.textContainer}>
-          <Text style={styles.title}>NAMECARD.MY</Text>
+          <Text style={styles.title}>WhatsCard</Text>
           <Text style={styles.subtitle}>Smart Business Networking</Text>
+          <View style={styles.tagline}>
+            <View style={styles.dot} />
+            <Text style={styles.taglineText}>Connect. Scan. Network.</Text>
+          </View>
         </View>
 
         <View style={styles.loadingContainer}>
@@ -101,12 +107,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               ]}
             />
           </View>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.loadingText}>Preparing your workspace...</Text>
         </View>
       </Animated.View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2025 NAMECARD.MY</Text>
+        <Text style={styles.footerText}>© 2025 WhatsCard</Text>
         <Text style={styles.version}>Version 1.0.0</Text>
       </View>
     </LinearGradient>
@@ -125,43 +131,67 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoWrapper: {
-    marginBottom: 30,
+    marginBottom: 40,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: 12,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 60,
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '700',
+    fontSize: 42,
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 1,
-    marginBottom: 8,
+    letterSpacing: 2,
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 18,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.95)',
+    letterSpacing: 1,
+    marginBottom: 16,
+  },
+  tagline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 8,
+  },
+  taglineText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.85)',
     letterSpacing: 0.5,
   },
   loadingContainer: {
     alignItems: 'center',
-    width: width * 0.6,
+    width: width * 0.65,
   },
   loadingBar: {
     width: '100%',
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 2,
+    height: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: 14,
   },
   loadingProgress: {
     position: 'absolute',
@@ -171,25 +201,35 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 2,
+    borderRadius: 3,
     transformOrigin: 'left',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
   },
   loadingText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   footer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 45,
     alignItems: 'center',
   },
   footerText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 12,
-    marginBottom: 4,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   version: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0.5,
   },
 });

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SupabaseService } from './supabase';
 import { getSupabaseClient } from './supabaseClient';
 
 interface AuthSession {
@@ -127,6 +128,53 @@ export class AuthManager {
   }
 
   /**
+   * Restore session from storage and verify it's still valid
+   */
+  static async restoreSession(): Promise<any> {
+    try {
+      // Get stored session
+      const storedSession = await this.getStoredSession();
+
+      if (!storedSession) {
+        return null;
+      }
+
+      // Check if session is expired
+      const now = Date.now();
+      if (storedSession.expiresAt && storedSession.expiresAt < now) {
+        // Session expired, try to refresh with refresh token
+        const client = SupabaseService.getClient();
+        if (!client) return null;
+
+        const { data, error } = await client.auth.refreshSession({
+          refresh_token: storedSession.refreshToken
+        });
+
+        if (error || !data.session) {
+          console.log('Failed to refresh expired session:', error);
+          await this.clearSession();
+          return null;
+        }
+
+        // Store the new session
+        await this.storeSession(data.session);
+        return data.session;
+      }
+
+      // Session still valid, return it
+      return {
+        user: storedSession.user,
+        access_token: storedSession.accessToken,
+        refresh_token: storedSession.refreshToken,
+        expires_at: storedSession.expiresAt
+      };
+    } catch (error) {
+      console.error('Failed to restore session:', error);
+      return null;
+    }
+  }
+
+  /**
    * Wrapper to execute operations with verified session
    */
   static async withVerifiedSession<T>(
@@ -185,9 +233,9 @@ export class AuthManager {
    * Setup auth state change listener
    */
   static setupAuthListener(onAuthChange: (user: any) => void): () => void {
-    const client = SupabaseService.getClient();
+    const client = getSupabaseClient();
 
-    const { data: subscription } = client.auth.onAuthStateChange(async (event, session) => {
+    const { data: subscription } = client.auth.onAuthStateChange(async (event: string, session: any) => {
       console.log('Auth state changed:', event);
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {

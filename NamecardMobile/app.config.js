@@ -1,58 +1,35 @@
 import 'dotenv/config';
 
+// Import the static app.json to merge values
+const appJson = require('./app.json');
+
 export default {
+  ...appJson,
   expo: {
-    name: "NAMECARD.MY",
-    slug: "namecard-my",
-    owner: "jacobai",
-    version: "1.0.0",
-    orientation: "portrait",
-    icon: "./assets/icon.png",
-    userInterfaceStyle: "light",
-    newArchEnabled: true,
-    splash: {
-      image: "./assets/splash-icon.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff"
+    ...appJson.expo,
+    // EAS Update configuration
+    updates: {
+      url: "https://u.expo.dev/66d97936-e847-4b80-a6c7-bf90ea4a0d80"
     },
-    ios: {
-      bundleIdentifier: "com.jacobai.namecardmy",
-      supportsTablet: true,
-      infoPlist: {
-        NSCameraUsageDescription: "NAMECARD.MY needs camera access to scan business cards",
-        NSMicrophoneUsageDescription: "NAMECARD.MY needs microphone access to record voice notes"
-      }
+    // Runtime version policy (applies to both iOS and Android)
+    runtimeVersion: {
+      policy: "appVersion"
     },
+    // Android-specific configuration
     android: {
-      package: "com.jacobai.namecardmy",
-      adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff"
-      },
-      edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
-      permissions: [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_EXTERNAL_STORAGE"
-      ]
+      ...appJson.expo.android,
     },
-    web: {
-      favicon: "./assets/favicon.png"
+    // iOS-specific configuration
+    ios: {
+      ...appJson.expo.ios,
     },
-    plugins: [
-      [
-        "expo-camera",
-        {
-          cameraPermission: "Allow NAMECARD.MY to access your camera to scan business cards."
-        }
-      ]
-    ],
+    // Override with environment-specific values
     extra: {
+      ...appJson.expo.extra,
       eas: {
         projectId: "66d97936-e847-4b80-a6c7-bf90ea4a0d80"
       },
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
       GOOGLE_VISION_API_KEY: process.env.GOOGLE_VISION_API_KEY || "",
       SUPABASE_URL: process.env.SUPABASE_URL || "",
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",

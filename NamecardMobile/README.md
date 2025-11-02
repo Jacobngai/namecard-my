@@ -1,6 +1,6 @@
-# NAMECARD.MY Mobile App
+# WhatsCard v1.0.0
 
-A React Native + Expo app for smart business card scanning and contact management.
+A React Native + Expo app for smart business card scanning and contact management with WhatsApp integration.
 
 ## Getting Started
 

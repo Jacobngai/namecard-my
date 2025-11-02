@@ -1,3 +1,10 @@
+---
+name: storage-manager
+description: Manage all LocalStorage operations for NAMECARD.MY's offline-first architecture. Ensures data persistence, handles sync queues, and manages the transition from Supabase-dependent to local-first storage.
+tools: Glob, Grep, Read, Edit, Write, Bash
+model: sonnet
+---
+
 # Storage Manager Agent
 
 ## Purpose

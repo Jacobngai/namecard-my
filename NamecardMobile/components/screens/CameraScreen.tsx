@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,18 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Contact } from '../types';
-import { GeminiOCRService } from '../services/geminiOCR';
-import { autoCropBusinessCard } from '../utils/imageProcessing';
-import { LocalStorage } from '../services/localStorage';
-import { ContactService } from '../services/contactService';
+import { Contact } from '../../types';
+import { GeminiOCRService } from '../../services/geminiOCR';
+import { autoCropBusinessCard } from '../../utils/imageProcessing';
+import { LocalStorage } from '../../services/localStorage';
+import { ContactService } from '../../services/contactService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,16 +32,91 @@ export function CameraScreen({ onScanCard, onNavigateToForm, onNavigateToSetting
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false); // Start as false to ensure initialization
+  const [cameraKey, setCameraKey] = useState(0); // Force remount key
   const cameraRef = useRef<CameraView>(null);
+  const appState = useRef(AppState.currentState);
 
+  // Reinitialize camera when screen comes into focus (React Navigation)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📷 CameraScreen focused - initializing camera');
+      setIsCameraReady(false);
+
+      // Force a fresh camera instance
+      setCameraKey(prev => prev + 1);
+
+      // Allow camera to initialize
+      const timer = setTimeout(() => {
+        console.log('✅ Camera ready');
+        setIsCameraReady(true);
+      }, 500);
+
+      // Cleanup when screen loses focus
+      return () => {
+        console.log('📷 CameraScreen unfocused - releasing camera');
+        clearTimeout(timer);
+        setIsCameraReady(false);
+      };
+    }, [])
+  );
+
+  // Request camera permissions on mount
   useEffect(() => {
     if (!permission?.granted && permission?.canAskAgain) {
       requestPermission();
     }
   }, [permission]);
 
+  // Handle app state changes (background/foreground)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    // App going to background or inactive
+    if (
+      appState.current.match(/active/) &&
+      nextAppState.match(/inactive|background/)
+    ) {
+      console.log('📱 App going to background - camera will be released');
+      setIsCameraReady(false);
+    }
+
+    // App coming back to foreground
+    if (
+      appState.current.match(/inactive|background/) &&
+      nextAppState === 'active'
+    ) {
+      console.log('📱 App returning to foreground - reinitializing camera');
+      // Force camera remount to re-establish session
+      setCameraKey(prev => prev + 1);
+
+      // Small delay to ensure camera is fully re-initialized
+      setTimeout(() => {
+        setIsCameraReady(true);
+      }, 300);
+    }
+
+    appState.current = nextAppState;
+  };
+
   const handleCapture = async () => {
-    if (!cameraRef.current || isScanning) return;
+    // Validate camera is ready
+    if (!cameraRef.current || isScanning || !isCameraReady) {
+      if (!isCameraReady) {
+        Alert.alert(
+          'Camera Not Ready',
+          'Camera is initializing. Please wait a moment and try again.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
+      return;
+    }
 
     setIsScanning(true);
     try {
@@ -67,8 +145,19 @@ export function CameraScreen({ onScanCard, onNavigateToForm, onNavigateToSetting
 
       Alert.alert(
         'Capture Failed',
-        'Failed to capture image. Please try again.',
-        [{ text: 'OK', style: 'default' }]
+        'Failed to capture image. The camera may need to reinitialize. Please try again in a moment.',
+        [
+          {
+            text: 'Retry',
+            onPress: () => {
+              // Force camera reinit
+              setIsCameraReady(false);
+              setCameraKey(prev => prev + 1);
+              setTimeout(() => setIsCameraReady(true), 500);
+            }
+          },
+          { text: 'Cancel', style: 'cancel' }
+        ]
       );
     }
   };
@@ -101,7 +190,7 @@ export function CameraScreen({ onScanCard, onNavigateToForm, onNavigateToSetting
           <View style={styles.logo}>
             <Ionicons name="camera" size={20} color="#FFFFFF" />
           </View>
-          <Text style={styles.headerTitle}>NAMECARD.MY</Text>
+          <Text style={styles.headerTitle}>WhatsCard</Text>
         </View>
         <TouchableOpacity onPress={onNavigateToSettings}>
           <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
@@ -110,16 +199,21 @@ export function CameraScreen({ onScanCard, onNavigateToForm, onNavigateToSetting
 
       <View style={styles.cameraContainer}>
         <CameraView
+          key={cameraKey} // Force remount on app state changes
           ref={cameraRef}
           style={styles.camera}
           facing={facing}
         />
-        
+
         {/* Scanning frame overlay - moved outside CameraView */}
         <View style={styles.overlay}>
           <View style={styles.scanFrame}>
             <Text style={styles.scanText}>
-              {isScanning ? 'Capturing...' : 'Position card within frame'}
+              {!isCameraReady
+                ? 'Initializing camera...'
+                : isScanning
+                ? 'Capturing...'
+                : 'Position card within frame'}
             </Text>
 
             {/* Corner brackets for visual guidance */}
@@ -129,6 +223,14 @@ export function CameraScreen({ onScanCard, onNavigateToForm, onNavigateToSetting
             <View style={[styles.corner, styles.bottomRight]} />
           </View>
         </View>
+
+        {/* Camera not ready indicator */}
+        {!isCameraReady && (
+          <View style={styles.cameraNotReadyOverlay}>
+            <ActivityIndicator size="large" color="#2563EB" />
+            <Text style={styles.cameraNotReadyText}>Initializing camera...</Text>
+          </View>
+        )}
       </View>
 
       {/* Capture button */}
@@ -341,5 +443,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     marginTop: 12,
+  },
+  cameraNotReadyOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraNotReadyText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginTop: 16,
+    fontWeight: '500',
   },
 });

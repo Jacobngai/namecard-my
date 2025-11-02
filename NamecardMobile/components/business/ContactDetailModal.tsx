@@ -12,8 +12,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Contact } from '../types';
-import { ContactService } from '../services/contactService';
+import { Contact } from '../../types';
+import { ContactService } from '../../services/contactService';
+import { useIntroMessage } from '../../hooks/useIntroMessage';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +33,8 @@ export function ContactDetailModal({
   onDelete,
   onEdit,
 }: ContactDetailModalProps) {
+  const { getFormattedMessage } = useIntroMessage();
+
   if (!contact) return null;
 
   const handleCall = async (phoneNumber: string) => {
@@ -57,7 +60,7 @@ export function ContactDetailModal({
 
   const handleWhatsApp = async (phoneNumber: string) => {
     const cleanPhone = phoneNumber.replace(/[^+\d]/g, '');
-    const message = `Hi ${contact.name}! Nice connecting with you.`;
+    const message = getFormattedMessage(contact.name);
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
@@ -176,7 +179,7 @@ export function ContactDetailModal({
             {contact.phones?.mobile1 && contact.phones.mobile1 !== contact.phone && (
               <TouchableOpacity
                 style={styles.infoRow}
-                onPress={() => handleCall(contact.phones.mobile1!)}
+                onPress={() => contact.phones?.mobile1 && handleCall(contact.phones.mobile1)}
               >
                 <Ionicons name="phone-portrait-outline" size={20} color="#6B7280" />
                 <View style={styles.phoneInfo}>
@@ -184,7 +187,7 @@ export function ContactDetailModal({
                   <Text style={styles.phoneLabel}>Mobile 1</Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => handleWhatsApp(contact.phones.mobile1!)}
+                  onPress={() => contact.phones?.mobile1 && handleWhatsApp(contact.phones.mobile1)}
                   style={styles.actionButton}
                 >
                   <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
@@ -196,7 +199,7 @@ export function ContactDetailModal({
             {contact.phones?.mobile2 && (
               <TouchableOpacity
                 style={styles.infoRow}
-                onPress={() => handleCall(contact.phones.mobile2)}
+                onPress={() => contact.phones?.mobile2 && handleCall(contact.phones.mobile2)}
               >
                 <Ionicons name="phone-portrait-outline" size={20} color="#6B7280" />
                 <View style={styles.phoneInfo}>
@@ -204,7 +207,7 @@ export function ContactDetailModal({
                   <Text style={styles.phoneLabel}>Mobile 2</Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => handleWhatsApp(contact.phones.mobile2)}
+                  onPress={() => contact.phones?.mobile2 && handleWhatsApp(contact.phones.mobile2)}
                   style={styles.actionButton}
                 >
                   <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
@@ -216,7 +219,7 @@ export function ContactDetailModal({
             {contact.phones?.office && (
               <TouchableOpacity
                 style={styles.infoRow}
-                onPress={() => handleCall(contact.phones.office)}
+                onPress={() => contact.phones?.office && handleCall(contact.phones.office)}
               >
                 <Ionicons name="business-outline" size={20} color="#6B7280" />
                 <View style={styles.phoneInfo}>
@@ -337,7 +340,8 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: width - 32,
-    height: (width - 32) * 0.6,
+    maxHeight: 300, // Maximum height for the image
+    resizeMode: 'contain' as const, // Ensure image fits within bounds
   },
   infoSection: {
     alignItems: 'center',

@@ -1,6 +1,7 @@
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { Contact } from '../types';
 import { ENV } from '../config/env';
+import { normalizePhoneNumber } from '../utils/phoneFormatter';
 
 interface GeminiResponse {
   candidates: Array<{
@@ -13,6 +14,8 @@ interface GeminiResponse {
 }
 
 interface ExtractedCardData {
+  detectedCountry?: string;
+  countryCode?: string;
   name: string;
   jobTitle: string;
   company: string;
@@ -49,22 +52,26 @@ export class GeminiOCRService {
 
 CRITICAL REQUIREMENTS:
 1. Extract EVERY piece of text visible on the card
-2. Identify and categorize phone numbers (mobile, office, fax)
-3. Detect job titles and positions
-4. Extract company names including trademark symbols (™, ®, ©)
-5. Parse addresses completely
-6. Identify emails and websites
+2. **FIRST detect the COUNTRY** from the address, language, currency symbols, or company registration details
+3. Identify and categorize phone numbers (mobile, office, fax)
+4. **AUTOMATICALLY format phone numbers with the CORRECT country code** based on detected country
+5. Detect job titles and positions
+6. Extract company names including trademark symbols (™, ®, ©)
+7. Parse addresses completely
+8. Identify emails and websites
 
 Return ONLY a JSON object with this exact structure (no markdown, no explanation):
 {
+  "detectedCountry": "country name (e.g., Malaysia, Singapore, Taiwan, China, USA)",
+  "countryCode": "country calling code (e.g., 60, 65, 886, 86, 1)",
   "name": "person's full name",
   "jobTitle": "job title or position",
   "company": "company name with any symbols",
   "phones": {
-    "mobile1": "primary mobile number",
-    "mobile2": "secondary mobile if exists",
-    "office": "office/landline number",
-    "fax": "fax number if exists"
+    "mobile1": "primary mobile number WITH COUNTRY CODE",
+    "mobile2": "secondary mobile if exists WITH COUNTRY CODE",
+    "office": "office/landline number WITH COUNTRY CODE",
+    "fax": "fax number if exists WITH COUNTRY CODE"
   },
   "email": "email address",
   "address": "complete address",
@@ -72,15 +79,107 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
   "confidence": 0-100
 }
 
-IMPORTANT RULES:
+🌍 COUNTRY DETECTION RULES (APPLY FIRST):
+1. **Address-based detection:**
+   - Malaysia: Look for "Kuala Lumpur", "Selangor", "Johor", "Penang", "KL", "Malaysia", postal codes 5-digits
+   - Singapore: Look for "Singapore", postal codes 6-digits, "SG"
+   - Taiwan: Look for "台灣", "Taiwan", "ROC", "Taipei", "台北"
+   - China: Look for "中国", "China", "PRC", "Beijing", "上海", "深圳"
+   - Indonesia: Look for "Indonesia", "Jakarta", "Bali"
+   - Thailand: Look for "Thailand", "Bangkok", "ประเทศไทย"
+   - USA: Look for state names, ZIP codes, "USA", "United States"
+
+2. **Company registration clues:**
+   - Malaysia: "Sdn Bhd", "Bhd"
+   - Singapore: "Pte Ltd"
+   - Taiwan: "股份有限公司", "Co., Ltd"
+   - China: "有限公司", "Limited"
+
+3. **Language/Script clues:**
+   - Traditional Chinese (繁體) → Likely Taiwan, Hong Kong, Malaysia
+   - Simplified Chinese (简体) → Likely China, Singapore
+   - Malay language → Malaysia
+   - Thai script → Thailand
+
+4. **Currency symbols:**
+   - RM → Malaysia
+   - S$ → Singapore
+   - NT$ → Taiwan
+   - ¥ → China/Japan
+   - $ → USA/Singapore/Australia
+
+5. **Default:** If no clear country detected, use Malaysia (+60)
+
+📱 PHONE NUMBER FORMATTING RULES (APPLY AFTER COUNTRY DETECTION):
+**CRITICAL: Phone numbers MUST be formatted for WhatsApp compatibility (no + sign, only digits with country code)**
+
+**MALAYSIA (+60):**
+- Input: "012-345 6789" → Output: "60123456789" ✅ (WhatsApp ready)
+- Input: "016-303 8028" → Output: "60163038028" ✅
+- Input: "03-1234 5678" → Output: "6031234567" ✅ (landline)
+- Input: "+60 16-303 8028" → Output: "60163038028" ✅
+- **Rule:** Remove leading 0, add 60, remove all spaces/dashes/plus signs
+
+**SINGAPORE (+65):**
+- Input: "9123 4567" → Output: "6591234567" ✅
+- Input: "6234 5678" → Output: "6562345678" ✅ (landline)
+- Input: "+65 9123 4567" → Output: "6591234567" ✅
+- **Rule:** Add 65, remove all spaces/dashes/plus signs
+
+**TAIWAN (+886):**
+- Input: "0912-345-678" → Output: "886912345678" ✅
+- Input: "02-2345-6789" → Output: "886223456789" ✅ (Taipei landline)
+- Input: "+886-912-345-678" → Output: "886912345678" ✅
+- **Rule:** Remove leading 0, add 886, remove all spaces/dashes/plus signs
+
+**CHINA (+86):**
+- Input: "138-0013-8000" → Output: "8613800138000" ✅
+- Input: "010-12345678" → Output: "861012345678" ✅ (Beijing landline)
+- Input: "+86 138-0013-8000" → Output: "8613800138000" ✅
+- **Rule:** Remove leading 0 (if mobile), add 86, remove all spaces/dashes/plus signs
+
+**USA/CANADA (+1):**
+- Input: "(555) 123-4567" → Output: "15551234567" ✅
+- Input: "555-123-4567" → Output: "15551234567" ✅
+- Input: "+1 555-123-4567" → Output: "15551234567" ✅
+- **Rule:** Add 1, remove all spaces/dashes/parentheses/plus signs
+
+**INDONESIA (+62):**
+- Input: "0812-3456-7890" → Output: "628123456789" ✅
+- Input: "+62 812-3456-7890" → Output: "628123456789" ✅
+- **Rule:** Remove leading 0, add 62, remove all spaces/dashes/plus signs
+
+**THAILAND (+66):**
+- Input: "081-234-5678" → Output: "66812345678" ✅
+- Input: "+66 81-234-5678" → Output: "66812345678" ✅
+- **Rule:** Remove leading 0, add 66, remove all spaces/dashes/plus signs
+
+🎯 FINAL PHONE FORMAT REQUIREMENTS:
+1. **NO plus sign (+)** - WhatsApp URLs use numbers only
+2. **NO spaces, dashes, dots, or parentheses** - Only digits
+3. **Country code FIRST** - e.g., 60123456789, not +60 12-345 6789
+4. **Remove ALL leading zeros** after country code
+5. **Example outputs:**
+   ✅ "60123456789" (Malaysia mobile)
+   ✅ "6591234567" (Singapore mobile)
+   ✅ "886912345678" (Taiwan mobile)
+   ❌ "+60 12-345 6789" (has +, spaces, dashes)
+   ❌ "60-123456789" (has dash)
+   ❌ "012-345 6789" (missing country code)
+
+EXTRACTION PRIORITY:
+1. First, determine the country
+2. Then extract phone numbers and apply the correct country code
+3. Format ALL phone numbers for WhatsApp (digits only with country code)
+4. Extract other fields (name, company, etc.)
+
+ADDITIONAL RULES:
 - For missing fields, use empty string ""
-- Keep phone numbers in their original format (with dots, dashes, etc)
-- Include country codes if present (e.g., +60, +1)
 - Preserve trademark symbols in company names
-- For Malaysian numbers starting with 01X, keep the format
 - Extract both English and non-English text
 - If multiple phone numbers exist without labels, assign the first mobile-looking number to mobile1
-- Job titles like CEO, Director, Manager, Co-Founder should go in jobTitle field`;
+- Job titles like CEO, Director, Manager, Co-Founder should go in jobTitle field
+- If country cannot be determined, default to Malaysia (60)`;
 
       // Prepare request body for Gemini
       const requestBody = {
@@ -204,15 +303,22 @@ IMPORTANT RULES:
    * Validate and clean extracted data
    */
   private static validateAndCleanData(data: any): ExtractedCardData {
+    const detectedCountryCode = data.countryCode || '60'; // Default to Malaysia
+
+    console.log('🌍 Detected Country:', data.detectedCountry || 'Malaysia (default)');
+    console.log('📞 Country Code:', detectedCountryCode);
+
     return {
+      detectedCountry: (data.detectedCountry || 'Malaysia').trim(),
+      countryCode: detectedCountryCode,
       name: (data.name || '').trim(),
       jobTitle: (data.jobTitle || '').trim(),
       company: (data.company || '').trim(),
       phones: {
-        mobile1: this.cleanPhoneNumber(data.phones?.mobile1 || ''),
-        mobile2: this.cleanPhoneNumber(data.phones?.mobile2 || ''),
-        office: this.cleanPhoneNumber(data.phones?.office || ''),
-        fax: this.cleanPhoneNumber(data.phones?.fax || ''),
+        mobile1: this.cleanPhoneNumberWithCountryCode(data.phones?.mobile1 || '', detectedCountryCode),
+        mobile2: this.cleanPhoneNumberWithCountryCode(data.phones?.mobile2 || '', detectedCountryCode),
+        office: this.cleanPhoneNumberWithCountryCode(data.phones?.office || '', detectedCountryCode),
+        fax: this.cleanPhoneNumberWithCountryCode(data.phones?.fax || '', detectedCountryCode),
       },
       email: (data.email || '').toLowerCase().trim(),
       address: (data.address || '').trim(),
@@ -222,15 +328,61 @@ IMPORTANT RULES:
   }
 
   /**
-   * Clean phone number while preserving format
+   * Clean and normalize phone number to international format
+   * Ensures all phone numbers have country code for WhatsApp integration
+   * @deprecated Use cleanPhoneNumberWithCountryCode instead
    */
   private static cleanPhoneNumber(phone: string): string {
     if (!phone) return '';
 
-    // Remove any text labels but keep the number format
-    return phone
+    // Remove any text labels but keep the number
+    const cleaned = phone
       .replace(/^(mobile|hp|tel|phone|fax|office)[\s:]*\d?[\s:]*/i, '')
       .trim();
+
+    // Normalize to international format with +60 country code (default Malaysia)
+    return normalizePhoneNumber(cleaned, '+60');
+  }
+
+  /**
+   * Clean and normalize phone number with detected country code
+   * Ensures phone numbers are WhatsApp-ready (no + sign, only digits)
+   * @param phone - Raw phone number from OCR
+   * @param countryCode - Detected country calling code (e.g., '60', '65', '886')
+   */
+  private static cleanPhoneNumberWithCountryCode(phone: string, countryCode: string): string {
+    if (!phone) return '';
+
+    console.log('📱 Cleaning phone:', phone, 'with country code:', countryCode);
+
+    // Gemini should already format the phone correctly, but let's ensure it's clean
+    // Remove all non-digit characters
+    let cleanNumber = phone.replace(/\D/g, '');
+
+    // If the number already starts with the country code, return as-is
+    if (cleanNumber.startsWith(countryCode)) {
+      console.log('✅ Phone already has country code:', cleanNumber);
+      return cleanNumber;
+    }
+
+    // If the number starts with a plus sign followed by country code in original
+    // (Gemini might not have cleaned it properly)
+    const originalDigits = phone.replace(/[^\d+]/g, '');
+    if (originalDigits.startsWith('+' + countryCode)) {
+      console.log('✅ Removing + sign from phone:', cleanNumber);
+      return cleanNumber;
+    }
+
+    // Remove leading zero (common in local phone numbers)
+    if (cleanNumber.startsWith('0')) {
+      cleanNumber = cleanNumber.substring(1);
+    }
+
+    // Add country code
+    const finalNumber = countryCode + cleanNumber;
+    console.log('✅ Final phone number:', finalNumber);
+
+    return finalNumber;
   }
 
   /**

@@ -1,3 +1,10 @@
+---
+name: offline-fix-executor
+description: Execute the CRITICAL_FIX_EXECUTION_PLAN.md with comprehensive validation and rollback capability. Specializes in implementing offline-first architecture fixes for NAMECARD.MY.
+tools: Glob, Grep, Read, Edit, Write, Bash
+model: sonnet
+---
+
 # Offline Fix Executor Agent
 
 ## Purpose

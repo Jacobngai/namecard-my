@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from './ui/Button';
-import { runAPITests } from '../scripts/testAPIs';
+import { Button } from '../ui/Button';
+import { runAPITests } from '../../scripts/testAPIs';
 
 interface TestResult {
   name: string;

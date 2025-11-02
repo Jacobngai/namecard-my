@@ -9,10 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
-import { APITestScreen } from './APITestScreen';
-import { Logo } from './Logo';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Logo } from '../common/Logo';
+import { useIntroMessage } from '../../hooks/useIntroMessage';
 
 interface ProfileScreenProps {
   user?: any;
@@ -20,25 +20,19 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
-  const [introMessage, setIntroMessage] = useState(
-    "Hi! Nice meeting you. Let's stay connected!"
-  );
+  const { introMessage, setIntroMessage, isLoading } = useIntroMessage();
   const [isEditing, setIsEditing] = useState(false);
-  const [showAPITest, setShowAPITest] = useState(false);
+  const [editedMessage, setEditedMessage] = useState(introMessage);
 
-  const handleSaveIntro = () => {
-    setIsEditing(false);
-    Alert.alert('Success', 'Introduction message updated');
+  const handleSaveIntro = async () => {
+    try {
+      await setIntroMessage(editedMessage);
+      setIsEditing(false);
+      Alert.alert('Success', 'Introduction message updated');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save introduction message');
+    }
   };
-
-  const handleUpgrade = () => {
-    Alert.alert('Upgrade', 'Premium subscription coming soon!');
-  };
-
-  // Show API test screen if requested
-  if (showAPITest) {
-    return <APITestScreen onBack={() => setShowAPITest(false)} />;
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,11 +50,6 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
             </View>
             <Text style={styles.userName}>{user?.user_metadata?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'Not logged in'}</Text>
-            
-            <TouchableOpacity style={styles.upgradeButton} onPress={handleUpgrade}>
-              <Ionicons name="diamond" size={16} color="#FFFFFF" />
-              <Text style={styles.upgradeText}>Upgrade to Pro</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -75,15 +64,19 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
             {isEditing ? (
               <View>
                 <Input
-                  value={introMessage}
-                  onChangeText={setIntroMessage}
+                  value={editedMessage}
+                  onChangeText={setEditedMessage}
                   placeholder="Enter your introduction message"
                   style={styles.introInput}
+                  multiline
                 />
                 <View style={styles.introActions}>
                   <Button
                     title="Cancel"
-                    onPress={() => setIsEditing(false)}
+                    onPress={() => {
+                      setEditedMessage(introMessage);
+                      setIsEditing(false);
+                    }}
                     variant="outline"
                     style={styles.cancelButton}
                   />
@@ -99,7 +92,10 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
                 <Text style={styles.introMessage}>{introMessage}</Text>
                 <TouchableOpacity
                   style={styles.editButton}
-                  onPress={() => setIsEditing(true)}
+                  onPress={() => {
+                    setEditedMessage(introMessage);
+                    setIsEditing(true);
+                  }}
                 >
                   <Ionicons name="pencil" size={16} color="#2563EB" />
                   <Text style={styles.editText}>Edit Message</Text>
@@ -109,52 +105,10 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* Settings Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          
-          <View style={styles.settingsCard}>
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="notifications-outline" size={20} color="#374151" />
-                <Text style={styles.settingText}>Notifications</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#374151" />
-                <Text style={styles.settingText}>Privacy</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="document-text-outline" size={20} color="#374151" />
-                <Text style={styles.settingText}>Terms of Service</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem} onPress={() => setShowAPITest(true)}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="cog-outline" size={20} color="#2563EB" />
-                <Text style={[styles.settingText, { color: '#2563EB' }]}>API Integration Tests</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#2563EB" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="help-circle-outline" size={20} color="#374151" />
-                <Text style={styles.settingText}>Help & Support</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-
-            {onLogout && (
+        {/* Sign Out Section */}
+        {onLogout && (
+          <View style={styles.section}>
+            <View style={styles.settingsCard}>
               <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]} onPress={onLogout}>
                 <View style={styles.settingLeft}>
                   <Ionicons name="log-out-outline" size={20} color="#DC2626" />
@@ -162,15 +116,15 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#DC2626" />
               </TouchableOpacity>
-            )}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* App Info */}
         <View style={styles.section}>
           <View style={styles.appInfo}>
             <Logo width={60} height={60} style={{ marginBottom: 8 }} />
-            <Text style={styles.appName}>NAMECARD.MY</Text>
+            <Text style={styles.appName}>WhatsCard</Text>
             <Text style={styles.appVersion}>Version 1.0.0</Text>
           </View>
         </View>
@@ -246,21 +200,6 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#6B7280',
-    marginBottom: 16,
-  },
-  upgradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2563EB',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  upgradeText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 6,
   },
   introCard: {
     backgroundColor: '#FFFFFF',

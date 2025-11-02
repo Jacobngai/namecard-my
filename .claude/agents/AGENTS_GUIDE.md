@@ -1,3 +1,10 @@
+---
+name: agents-guide
+description: Documentation for NAMECARD.MY specialized agents - this is not an executable agent but a guide for understanding the agent system.
+tools: Read
+model: sonnet
+---
+
 # NAMECARD.MY Specialized Agents Guide
 
 ## 🎯 Overview

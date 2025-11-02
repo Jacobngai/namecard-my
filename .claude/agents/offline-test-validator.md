@@ -1,3 +1,10 @@
+---
+name: offline-test-validator
+description: Comprehensive offline testing and validation for NAMECARD.MY, ensuring 100% functionality without internet connection. Executes the OFFLINE_TEST_VERIFICATION.md protocol systematically.
+tools: Glob, Grep, Read, Bash
+model: sonnet
+---
+
 # Offline Test Validator Agent
 
 ## Purpose

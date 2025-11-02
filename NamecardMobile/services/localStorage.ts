@@ -1,10 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { Contact } from '../types';
 
 const CONTACTS_KEY = '@namecard/contacts';
 const SYNC_QUEUE_KEY = '@namecard/sync_queue';
-const USER_PREFS_KEY = '@namecard/user_prefs';
 const IMAGES_DIR = `${FileSystem.documentDirectory}business_cards/`;
 
 export interface SyncQueueItem {
@@ -49,7 +48,7 @@ export class LocalStorage {
 
       // Generate local ID if not provided
       const newContact: Contact = {
-        id: contact.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: contact.id || `local_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         name: contact.name || '',
         company: contact.company || '',
         phone: contact.phone || '',
@@ -163,7 +162,7 @@ export class LocalStorage {
       await this.init();
 
       // Generate unique filename
-      const fileName = `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+      const fileName = `card_${Date.now()}_${Math.random().toString(36).substring(2, 11)}.jpg`;
       const localUri = `${IMAGES_DIR}${fileName}`;
 
       // Copy image to app's document directory
@@ -207,7 +206,7 @@ export class LocalStorage {
 
       const newItem: SyncQueueItem = {
         ...item,
-        id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `sync_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         retries: 0
       };
 
@@ -252,7 +251,7 @@ export class LocalStorage {
    */
   static async clearAll(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([CONTACTS_KEY, SYNC_QUEUE_KEY, USER_PREFS_KEY]);
+      await AsyncStorage.multiRemove([CONTACTS_KEY, SYNC_QUEUE_KEY]);
 
       // Clear images directory
       const images = await FileSystem.readDirectoryAsync(IMAGES_DIR);

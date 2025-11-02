@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAMECARD.MY Storage Flow - Swimlane Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            border-left: 4px solid #764ba2;
+            padding-left: 10px;
+        }
+        .legend {
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .legend h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 5px;
+        }
+        .success { color: #10b981; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .warning { color: #f59e0b; font-weight: bold; }
+        .info { color: #3b82f6; font-weight: bold; }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+        }
+        .description {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .critical-path {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗂️ NAMECARD.MY Storage Architecture - Proper Implementation Flow</h1>
+
+        <div class="legend">
+            <h3>📋 Legend</h3>
+            <div class="legend-item success">✅ Success Path</div>
+            <div class="legend-item error">❌ Error Handling</div>
+            <div class="legend-item warning">⚠️ Fallback</div>
+            <div class="legend-item info">📊 Sync Operation</div>
+        </div>
+
+        <h2>1. Complete Storage Flow - How It Should Work</h2>
+        <div class="description">
+            This diagram shows the ideal flow from camera capture to both local and cloud storage, with proper error handling and data persistence.
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Camera
+    participant ImageProcessor
+    participant ContactForm
+    participant ContactService
+    participant LocalStorage
+    participant AsyncStorage
+    participant SyncQueue
+    participant SupabaseStorage
+    participant SupabaseDB
+
+    User->>Camera: Capture Business Card
+    Camera->>Camera: takePictureAsync(quality: 0.9)
+    Camera->>ImageProcessor: Process Raw Image
+
+    alt Auto Crop Enabled
+        ImageProcessor->>ImageProcessor: autoCropBusinessCard()
+        ImageProcessor->>ImageProcessor: Validate cropped dimensions
+        alt Crop Successful
+            ImageProcessor-->>Camera: Return Cropped URI
+        else Crop Failed
+            ImageProcessor-->>Camera: Return Original URI
+        end
+    else Manual Mode
+        ImageProcessor-->>Camera: Return Original URI
+    end
+
+    Camera->>ContactForm: Pass Image URI
+
+    opt Back Side Capture
+        User->>Camera: Capture Back Side
+        Camera->>ImageProcessor: Process Back Image
+        ImageProcessor-->>ContactForm: Back Image URI
+    end
+
+    ContactForm->>ContactForm: Extract OCR Data
+    User->>ContactForm: Review & Edit Details
+    User->>ContactForm: Save Contact
+
+    ContactForm->>ContactService: Save Contact Data
+
+    Note over ContactService: BEGIN DUAL STORAGE
+
+    ContactService->>LocalStorage: Save Front Image
+    LocalStorage->>LocalStorage: Generate Unique Filename
+    LocalStorage->>LocalStorage: Copy to Persistent Directory
+    LocalStorage-->>ContactService: Front Image Path
+
+    opt Has Back Image
+        ContactService->>LocalStorage: Save Back Image
+        LocalStorage->>LocalStorage: Generate Unique Filename
+        LocalStorage->>LocalStorage: Copy to Persistent Directory
+        LocalStorage-->>ContactService: Back Image Path
+    end
+
+    ContactService->>AsyncStorage: Save Contact JSON
+    AsyncStorage->>AsyncStorage: Persist Contact Data
+    AsyncStorage-->>ContactService: Success
+
+    alt User Authenticated
+        ContactService->>SyncQueue: Add to Sync Queue
+        SyncQueue->>SyncQueue: Store Sync Operation
+
+        alt Network Available
+            ContactService->>SupabaseStorage: Upload Front Image
+            SupabaseStorage->>SupabaseStorage: Store in Bucket
+            SupabaseStorage-->>ContactService: Public URL
+
+            opt Has Back Image
+                ContactService->>SupabaseStorage: Upload Back Image
+                SupabaseStorage->>SupabaseStorage: Store in Bucket
+                SupabaseStorage-->>ContactService: Public URL
+            end
+
+            ContactService->>SupabaseDB: Create Contact Record
+            SupabaseDB->>SupabaseDB: Store with Image URLs
+            SupabaseDB-->>ContactService: Synced Contact
+
+            ContactService->>SyncQueue: Remove from Queue
+            ContactService->>AsyncStorage: Update Contact (synced=true)
+        else No Network
+            Note over SyncQueue: Keep in Queue for Later
+        end
+    else Not Authenticated
+        Note over ContactService: Store Locally Only
+    end
+
+    ContactService-->>User: Contact Saved Successfully
+            </pre>
+        </div>
+
+        <h2>2. Error Recovery & Offline Mode</h2>
+        <div class="description critical-path">
+            Critical path showing how the app should handle failures and recover gracefully
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+flowchart TB
+    Start([User Scans Card]) --> Capture[Camera Capture]
+
+    Capture --> Process{Image Processing}
+    Process -->|Success| TempFile[Temporary File Created]
+    Process -->|Failed| UseOriginal[Use Original Image]
+
+    TempFile --> SaveLocal{Save Locally}
+    UseOriginal --> SaveLocal
+
+    SaveLocal -->|Success| LocalCopy[Local Copy Created]
+    SaveLocal -->|Failed| RetryLocal{Retry?}
+    RetryLocal -->|Yes| SaveLocal
+    RetryLocal -->|No| FailNotify[Notify User & Abort]
+
+    LocalCopy --> ContactData[Save Contact Data]
+    ContactData --> CheckAuth{Authenticated?}
+
+    CheckAuth -->|Yes| CheckNetwork{Network Available?}
+    CheckAuth -->|No| LocalOnly[Store Locally Only]
+
+    CheckNetwork -->|Yes| UploadSupabase[Upload to Supabase]
+    CheckNetwork -->|No| QueueSync[Queue for Sync]
+
+    UploadSupabase -->|Success| UpdateURLs[Update Contact URLs]
+    UploadSupabase -->|Failed| KeepLocal[Keep Local URLs]
+
+    UpdateURLs --> MarkSynced[Mark as Synced]
+    KeepLocal --> QueueSync
+
+    QueueSync --> BackgroundSync[Background Sync Task]
+    BackgroundSync --> CheckQueue{Queue Empty?}
+    CheckQueue -->|No| ProcessQueue[Process Next Item]
+    CheckQueue -->|Yes| Done([Complete])
+
+    ProcessQueue --> RetryUpload{Upload Success?}
+    RetryUpload -->|Yes| RemoveQueue[Remove from Queue]
+    RetryUpload -->|No| IncrementRetry[Increment Retry Count]
+
+    IncrementRetry --> CheckRetries{Max Retries?}
+    CheckRetries -->|No| BackgroundSync
+    CheckRetries -->|Yes| NotifyFailed[Notify Sync Failed]
+
+    RemoveQueue --> CheckQueue
+
+    LocalOnly --> Done
+    MarkSynced --> Done
+    NotifyFailed --> Done
+
+    style FailNotify fill:#ff6b6b
+    style NotifyFailed fill:#ff6b6b
+    style MarkSynced fill:#51cf66
+    style LocalOnly fill:#ffd43b
+    style QueueSync fill:#74c0fc
+            </pre>
+        </div>
+
+        <h2>3. Data Synchronization Strategy</h2>
+        <div class="description">
+            Shows how offline-first architecture ensures data integrity across local and cloud storage
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+stateDiagram-v2
+    [*] --> LocalStorage: Contact Created
+
+    LocalStorage --> SyncPending: Add to Queue
+
+    SyncPending --> Syncing: Network Available
+    SyncPending --> SyncPending: No Network
+
+    Syncing --> UploadingImages: Upload Images
+    UploadingImages --> UploadingData: Images Uploaded
+
+    UploadingData --> Synced: Data Saved to Supabase
+    UploadingData --> SyncFailed: Upload Failed
+
+    SyncFailed --> SyncPending: Retry Later
+
+    Synced --> UpdateLocal: Update Local Record
+    UpdateLocal --> [*]: Complete
+
+    state LocalStorage {
+        [*] --> SaveImage: Image URI Received
+        SaveImage --> ValidateImage: Check Image
+        ValidateImage --> PersistImage: Valid
+        ValidateImage --> UseDefault: Invalid
+        PersistImage --> SaveContact: Image Saved
+        UseDefault --> SaveContact: No Image
+        SaveContact --> [*]: Contact Stored
+    }
+
+    state Syncing {
+        [*] --> CheckAuth: Verify Authentication
+        CheckAuth --> CheckBucket: Auth Valid
+        CheckAuth --> Abort: No Auth
+        CheckBucket --> PrepareUpload: Bucket Exists
+        CheckBucket --> CreateBucket: Bucket Missing
+        CreateBucket --> PrepareUpload: Created
+        PrepareUpload --> [*]: Ready
+    }
+
+    state UploadingImages {
+        [*] --> UploadFront: Front Image
+        UploadFront --> CheckBack: Uploaded
+        CheckBack --> UploadBack: Has Back Image
+        CheckBack --> [*]: No Back Image
+        UploadBack --> [*]: Both Uploaded
+    }
+            </pre>
+        </div>
+
+        <h2>4. Storage Locations & Structure</h2>
+        <div class="description">
+            Detailed view of where data is stored locally and in the cloud
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+graph TB
+    subgraph "Local Device Storage"
+        AsyncStorage["AsyncStorage (JSON)"]
+        FileSystem["File System (Images)"]
+
+        AsyncStorage --> Contacts["@namecard/contacts<br/>Array of Contact Objects"]
+        AsyncStorage --> Queue["@namecard/sync_queue<br/>Pending Operations"]
+        AsyncStorage --> Prefs["@namecard/user_prefs<br/>User Settings"]
+
+        FileSystem --> ImagesDir["📁 /business_cards/"]
+        ImagesDir --> FrontImages["card_[timestamp]_[random].jpg<br/>(Front Images)"]
+        ImagesDir --> BackImages["back_[timestamp]_[random].jpg<br/>(Back Images)"]
+    end
+
+    subgraph "Supabase Cloud Storage"
+        Storage["Supabase Storage"]
+        Database["Supabase Database"]
+
+        Storage --> Bucket["📦 contact-images bucket"]
+        Bucket --> UserFolder["/{user_id}/"]
+        UserFolder --> CloudFront["{contact_id}_front.jpg"]
+        UserFolder --> CloudBack["{contact_id}_back.jpg"]
+
+        Database --> ContactsTable["contacts table"]
+        ContactsTable --> Fields["Fields:<br/>• id (uuid)<br/>• user_id<br/>• name<br/>• email<br/>• phone<br/>• company<br/>• image_url<br/>• back_image_url<br/>• created_at<br/>• updated_at"]
+    end
+
+    Contacts -.->|Sync| ContactsTable
+    FrontImages -.->|Upload| CloudFront
+    BackImages -.->|Upload| CloudBack
+
+    style AsyncStorage fill:#ffd43b
+    style FileSystem fill:#74c0fc
+    style Storage fill:#51cf66
+    style Database fill:#51cf66
+            </pre>
+        </div>
+
+        <h2>5. Critical Bug Fixes Required</h2>
+        <div class="description critical-path">
+            These issues must be fixed for proper dual storage to work
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+flowchart LR
+    subgraph "Current Bugs"
+        Bug1[Temp URI Storage]
+        Bug2[Back Image Ignored]
+        Bug3[No Image Cleanup]
+        Bug4[Silent Failures]
+        Bug5[URI Type Check]
+    end
+
+    subgraph "Required Fixes"
+        Fix1[Always Copy to Persistent]
+        Fix2[Handle Both Images]
+        Fix3[Delete with Contact]
+        Fix4[User Notifications]
+        Fix5[Better URI Validation]
+    end
+
+    subgraph "Implementation"
+        Code1[contactService.ts:45]
+        Code2[contactService.ts:42-64]
+        Code3[App.tsx:189-197]
+        Code4[All Try-Catch Blocks]
+        Code5[localStorage.ts:160]
+    end
+
+    Bug1 --> Fix1 --> Code1
+    Bug2 --> Fix2 --> Code2
+    Bug3 --> Fix3 --> Code3
+    Bug4 --> Fix4 --> Code4
+    Bug5 --> Fix5 --> Code5
+
+    style Bug1 fill:#ff6b6b
+    style Bug2 fill:#ff6b6b
+    style Bug3 fill:#ff6b6b
+    style Bug4 fill:#ff6b6b
+    style Bug5 fill:#ff6b6b
+    style Fix1 fill:#51cf66
+    style Fix2 fill:#51cf66
+    style Fix3 fill:#51cf66
+    style Fix4 fill:#51cf66
+    style Fix5 fill:#51cf66
+            </pre>
+        </div>
+
+        <h2>6. Complete Fix Implementation Plan</h2>
+        <div class="description">
+            Step-by-step plan to implement proper dual storage
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+gantt
+    title Storage Bug Fix Implementation Timeline
+    dateFormat X
+    axisFormat %s
+
+    section Phase 1 - Local Storage
+    Fix URI type checking           :done, fix1, 0, 1
+    Implement back image storage    :done, fix2, 1, 2
+    Add image cleanup on delete     :done, fix3, 2, 3
+    Validate image accessibility    :active, fix4, 3, 4
+
+    section Phase 2 - Error Handling
+    Add user notifications          :fix5, 4, 5
+    Implement retry logic           :fix6, 5, 6
+    Add storage health checks       :fix7, 6, 7
+
+    section Phase 3 - Cloud Sync
+    Fix back image sync             :fix8, 7, 8
+    Verify bucket operations        :fix9, 8, 9
+    Handle sync conflicts           :fix10, 9, 10
+
+    section Phase 4 - Testing
+    Unit tests for storage          :test1, 10, 11
+    Integration tests               :test2, 11, 12
+    Manual testing                  :test3, 12, 13
+            </pre>
+        </div>
+
+        <h2>7. Data Flow Summary</h2>
+        <div class="description">
+            Quick reference for the complete data flow
+        </div>
+
+        <div class="mermaid">
+            <pre class="mermaid">
+journey
+    title Contact Creation Journey
+    section Camera Capture
+      Open Camera: 5: User
+      Take Photo: 5: User
+      Auto Crop: 3: System
+      Review Image: 5: User
+    section Local Storage
+      Copy to App Directory: 5: System
+      Save Contact JSON: 5: System
+      Update UI: 5: System
+    section Cloud Sync
+      Check Authentication: 3: System
+      Upload Images: 3: System
+      Save to Database: 3: System
+      Update Local Record: 5: System
+    section Error Recovery
+      Queue Failed Sync: 5: System
+      Retry in Background: 4: System
+      Notify on Failure: 2: System
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#764ba2',
+                lineColor: '#5c6bc0',
+                secondaryColor: '#f0f4ff',
+                tertiaryColor: '#fef2f2',
+                background: '#ffffff',
+                mainBkg: '#667eea',
+                secondBkg: '#f0f4ff',
+                tertiaryBkg: '#fef2f2'
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                actorMargin: 50,
+                participantMargin: 20,
+                boxMargin: 10,
+                messageMargin: 35
+            }
+        });
+    </script>
+</body>
+</html>

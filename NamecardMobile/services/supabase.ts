@@ -1,7 +1,8 @@
-import * as FileSystem from 'expo-file-system/legacy';
-import { Contact } from '../types';
+import * as FileSystem from 'expo-file-system';
+import { Contact, Group } from '../types';
 import { AuthManager } from './authManager';
 import { getSupabaseClient } from './supabaseClient';
+import { ENV } from '../config/env';
 
 // Database types based on our new schema
 interface DatabaseContact {
@@ -486,16 +487,110 @@ export class SupabaseService {
   /**
    * Get current user
    */
-  static async getCurrentUser(): Promise<any> {
+  static async getCurrentUser(): Promise<{ user: any; error: any }> {
     try {
       const client = this.getClient();
       const { data: { user }, error } = await client.auth.getUser();
 
-      return user;
+      return { user, error };
     } catch (error) {
       console.error('Get user error:', error);
-      return null;
+      return { user: null, error };
     }
+  }
+
+  /**
+   * Get all groups for the current user
+   */
+  static async getGroups(): Promise<Group[]> {
+    try {
+      return await AuthManager.withVerifiedSession(async (userId) => {
+        const client = this.getClient();
+
+        const { data, error } = await client
+          .from('groups')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.warn('⚠️ Failed to fetch groups from cloud:', error.message);
+          return [];
+        }
+
+        return data || [];
+      });
+    } catch (error) {
+      // Not authenticated - return empty array
+      console.log('⚠️ Not authenticated, returning empty groups array');
+      return [];
+    }
+  }
+
+  /**
+   * Create or update a group
+   */
+  static async upsertGroup(group: Partial<Group> & { name: string; color: string }): Promise<Group> {
+    return AuthManager.withVerifiedSession(async (userId) => {
+      const client = this.getClient();
+
+      const upsertData: any = {
+        user_id: userId,
+        name: group.name,
+        description: group.description || null,
+        color: group.color,
+        icon: group.icon || null,
+        contact_count: group.contactCount || 0,
+      };
+
+      // Only include id if it's a valid UUID (not a local ID)
+      if (group.id && !group.id.startsWith('group_')) {
+        upsertData.id = group.id;
+        upsertData.created_at = group.createdAt;
+        upsertData.updated_at = group.updatedAt || new Date().toISOString();
+      }
+
+      const { data, error } = await client
+        .from('groups')
+        .upsert(upsertData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to upsert group: ${error.message}`);
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description || undefined,
+        color: data.color,
+        icon: data.icon || undefined,
+        contactCount: data.contact_count,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        userId: data.user_id,
+      };
+    });
+  }
+
+  /**
+   * Delete a group
+   */
+  static async deleteGroup(groupId: string): Promise<void> {
+    return AuthManager.withVerifiedSession(async (userId) => {
+      const client = this.getClient();
+
+      const { error } = await client
+        .from('groups')
+        .delete()
+        .eq('id', groupId)
+        .eq('user_id', userId);
+
+      if (error) {
+        throw new Error(`Failed to delete group: ${error.message}`);
+      }
+    });
   }
 
   /**

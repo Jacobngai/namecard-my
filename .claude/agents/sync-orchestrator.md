@@ -1,3 +1,10 @@
+---
+name: sync-orchestrator
+description: Manage background synchronization between LocalStorage and Supabase, ensuring data consistency while maintaining offline-first principles. Handles sync queues, conflict resolution, and ensures sync never blocks the UI.
+tools: Glob, Grep, Read, Edit, Write, Bash
+model: sonnet
+---
+
 # Sync Orchestrator Agent
 
 ## Purpose

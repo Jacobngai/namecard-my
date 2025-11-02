@@ -25,3 +25,8 @@ export function getSupabaseClient(): SupabaseClient {
   }
   return supabaseClient;
 }
+
+/**
+ * Export supabase instance for backward compatibility
+ */
+export const supabase = getSupabaseClient();

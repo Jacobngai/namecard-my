@@ -18,7 +18,6 @@ interface FloatingActionButtonProps {
   onExport: () => void;
   onDelete: () => void;
   onAddToGroup: () => void;
-  onShareMyCard: () => void;
   onAddManually: () => void;
   onScanCard: () => void;
 }
@@ -29,7 +28,6 @@ export function FloatingActionButton({
   onExport,
   onDelete,
   onAddToGroup,
-  onShareMyCard,
   onAddManually,
   onScanCard,
 }: FloatingActionButtonProps) {
@@ -165,31 +163,6 @@ export function FloatingActionButton({
                     ]}
                   >
                     <TouchableOpacity
-                      style={styles.menuButton}
-                      onPress={() => handleAction(onShareMyCard)}
-                    >
-                      <View style={styles.menuIconContainer}>
-                        <Ionicons name="share-outline" size={24} color="#2563EB" />
-                      </View>
-                      <Text style={styles.menuLabel}>Send your card</Text>
-                    </TouchableOpacity>
-                  </Animated.View>
-
-                  <Animated.View
-                    style={[
-                      styles.menuItem,
-                      {
-                        opacity: animation,
-                        transform: [{
-                          translateY: animation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [50, 0],
-                          })
-                        }]
-                      }
-                    ]}
-                  >
-                    <TouchableOpacity
                       style={[styles.menuButton, styles.deleteButton]}
                       onPress={() => handleAction(onDelete)}
                     >
@@ -268,31 +241,6 @@ export function FloatingActionButton({
           >
             <BlurView intensity={10} style={styles.blurView}>
               <View style={styles.menuContainer}>
-                <Animated.View
-                  style={[
-                    styles.menuItem,
-                    {
-                      opacity: animation,
-                      transform: [{
-                        translateY: animation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [50, 0],
-                        })
-                      }]
-                    }
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={styles.menuButton}
-                    onPress={() => handleAction(onShareMyCard)}
-                  >
-                    <View style={styles.menuIconContainer}>
-                      <Ionicons name="share-outline" size={24} color="#2563EB" />
-                    </View>
-                    <Text style={styles.menuLabel}>Share my card</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-
                 <Animated.View
                   style={[
                     styles.menuItem,

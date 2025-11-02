@@ -12,22 +12,26 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
-import { Contact } from '../types';
-import { TopLoader } from './TopLoader';
-import { GeminiOCRService } from '../services/geminiOCR';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Contact } from '../../types';
+import { TopLoader } from '../common/TopLoader';
+import { GeminiOCRService } from '../../services/geminiOCR';
+import { useIntroMessage } from '../../hooks/useIntroMessage';
 
 interface ContactFormProps {
   scannedData: Partial<Contact> | null;
   imageUri?: string;
+  backImageUri?: string;
   processOCR?: boolean;
   onSave: (contactData: Partial<Contact>) => void;
   onBack: () => void;
+  onCaptureBackImage?: () => void;
 }
 
-export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack }: ContactFormProps) {
+export function ContactForm({ scannedData, imageUri, backImageUri, processOCR, onSave, onBack, onCaptureBackImage }: ContactFormProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const { getFormattedMessage } = useIntroMessage();
   const [formData, setFormData] = useState({
     name: scannedData?.name || '',
     jobTitle: scannedData?.jobTitle || '',
@@ -44,13 +48,24 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
   });
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
-  const [currentImageUri, setCurrentImageUri] = useState(imageUri || scannedData?.imageUrl || '');
+  const [frontImageUri, setFrontImageUri] = useState(imageUri || scannedData?.imageUrl || '');
+  const [backImageState, setBackImageState] = useState(backImageUri || '');
 
   useEffect(() => {
     if (imageUri && processOCR) {
       performOCR();
     }
   }, [imageUri, processOCR]);
+
+  // Re-run OCR when back image is captured
+  useEffect(() => {
+    if (backImageUri) {
+      setBackImageState(backImageUri);
+      if (frontImageUri) {
+        performDualOCR();
+      }
+    }
+  }, [backImageUri]);
 
   const performOCR = async () => {
     if (!imageUri) return;
@@ -73,46 +88,7 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
       setOcrProgress(0.9);
 
       // Animate field updates
-      if (ocrData.name) {
-        setFormData(prev => ({ ...prev, name: ocrData.name || '' }));
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (ocrData.jobTitle) {
-        setFormData(prev => ({ ...prev, jobTitle: ocrData.jobTitle || '' }));
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (ocrData.company) {
-        setFormData(prev => ({ ...prev, company: ocrData.company || '' }));
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Handle multiple phone numbers
-      if (ocrData.phones) {
-        setFormData(prev => ({
-          ...prev,
-          phone: ocrData.phone || '',
-          phones: {
-            mobile1: ocrData.phones?.mobile1 || '',
-            mobile2: ocrData.phones?.mobile2 || '',
-            office: ocrData.phones?.office || '',
-            fax: ocrData.phones?.fax || '',
-          }
-        }));
-      } else if (ocrData.phone) {
-        setFormData(prev => ({ ...prev, phone: ocrData.phone || '' }));
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (ocrData.email) {
-        setFormData(prev => ({ ...prev, email: ocrData.email || '' }));
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (ocrData.address) {
-        setFormData(prev => ({ ...prev, address: ocrData.address || '' }));
-      }
+      updateFormWithOCRData(ocrData);
 
       setOcrProgress(1);
       console.log('✅ OCR processing completed:', ocrData);
@@ -130,6 +106,118 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
       }, 500);
 
       // Don't show error alert - user can still manually enter data
+    }
+  };
+
+  const performDualOCR = async () => {
+    if (!frontImageUri || !backImageState) return;
+
+    setIsProcessingOCR(true);
+    setOcrProgress(0.2);
+
+    try {
+      console.log('🔍 Starting dual-sided OCR processing...');
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setOcrProgress(prev => Math.min(prev + 0.1, 0.7));
+      }, 200);
+
+      // Process both images
+      const [frontData, backData] = await Promise.all([
+        GeminiOCRService.processBusinessCard(frontImageUri),
+        GeminiOCRService.processBusinessCard(backImageState)
+      ]);
+
+      clearInterval(progressInterval);
+      setOcrProgress(0.9);
+
+      console.log('📄 Front data:', frontData);
+      console.log('📄 Back data:', backData);
+
+      // Merge data from both sides (front takes priority, back fills in missing info)
+      const mergedData = mergeCardData(frontData, backData);
+      console.log('🔀 Merged data:', mergedData);
+
+      // Update form with merged data
+      updateFormWithOCRData(mergedData);
+
+      setOcrProgress(1);
+      console.log('✅ Dual OCR processing completed');
+
+      // Hide loader after a brief moment
+      setTimeout(() => {
+        setIsProcessingOCR(false);
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Dual OCR processing failed:', error);
+      setOcrProgress(1);
+      setTimeout(() => {
+        setIsProcessingOCR(false);
+      }, 500);
+    }
+  };
+
+  // Helper function to merge data from front and back of card
+  const mergeCardData = (front: Partial<Contact>, back: Partial<Contact>): Partial<Contact> => {
+    return {
+      name: front.name || back.name || '',
+      jobTitle: front.jobTitle || back.jobTitle || '',
+      company: front.company || back.company || '',
+      phone: front.phone || back.phone || '',
+      phones: {
+        mobile1: front.phones?.mobile1 || back.phones?.mobile1 || '',
+        mobile2: front.phones?.mobile2 || back.phones?.mobile2 || '',
+        office: front.phones?.office || back.phones?.office || '',
+        fax: front.phones?.fax || back.phones?.fax || '',
+      },
+      email: front.email || back.email || '',
+      address: front.address || back.address || '',
+    };
+  };
+
+  // Helper function to update form with OCR data
+  const updateFormWithOCRData = async (ocrData: Partial<Contact>) => {
+    if (ocrData.name) {
+      setFormData(prev => ({ ...prev, name: ocrData.name || '' }));
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (ocrData.jobTitle) {
+      setFormData(prev => ({ ...prev, jobTitle: ocrData.jobTitle || '' }));
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (ocrData.company) {
+      setFormData(prev => ({ ...prev, company: ocrData.company || '' }));
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Handle multiple phone numbers
+    if (ocrData.phones) {
+      setFormData(prev => ({
+        ...prev,
+        phone: ocrData.phone || '',
+        phones: {
+          mobile1: ocrData.phones?.mobile1 || '',
+          mobile2: ocrData.phones?.mobile2 || '',
+          office: ocrData.phones?.office || '',
+          fax: ocrData.phones?.fax || '',
+        }
+      }));
+    } else if (ocrData.phone) {
+      setFormData(prev => ({ ...prev, phone: ocrData.phone || '' }));
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (ocrData.email) {
+      setFormData(prev => ({ ...prev, email: ocrData.email || '' }));
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (ocrData.address) {
+      setFormData(prev => ({ ...prev, address: ocrData.address || '' }));
     }
   };
 
@@ -156,7 +244,13 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
     }
     setIsSaving(true);
     try {
-      await onSave({ ...formData, imageUrl: currentImageUri, phones: formData.phones });
+      // Use front image as primary, but could store both in future
+      await onSave({
+        ...formData,
+        imageUrl: frontImageUri,
+        backImageUrl: backImageState || undefined,
+        phones: formData.phones
+      });
     } finally {
       setIsSaving(false);
     }
@@ -198,8 +292,8 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
         cleanPhone = cleanPhone.substring(1);
       }
 
-      // Default introduction message
-      const introMessage = `Hi ${formData.name}! Nice meeting you. Let's stay connected!`;
+      // Get user's personalized introduction message
+      const introMessage = getFormattedMessage(formData.name);
 
       // Create WhatsApp URL
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(introMessage)}`;
@@ -235,21 +329,70 @@ export function ContactForm({ scannedData, imageUri, processOCR, onSave, onBack 
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Business card image */}
-        {currentImageUri && (
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: currentImageUri }}
-              style={styles.cardImage}
-              resizeMode="cover"
-            />
-            {isProcessingOCR && (
-              <View style={styles.ocrOverlay}>
-                <Text style={styles.ocrText}>Extracting information...</Text>
+        {/* Horizontal Scrollable Image Section */}
+        <View style={styles.imagesSection}>
+          <Text style={styles.imagesSectionTitle}>Business Card Images</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.imagesScrollView}
+            contentContainerStyle={styles.imagesScrollContent}
+          >
+            {/* Front Image */}
+            {frontImageUri && (
+              <View style={styles.imageSlot}>
+                <Image
+                  source={{ uri: frontImageUri }}
+                  style={styles.cardImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.imageLabel}>
+                  <Text style={styles.imageLabelText}>Front</Text>
+                </View>
+                {isProcessingOCR && !backImageState && (
+                  <View style={styles.ocrOverlay}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.ocrText}>Processing...</Text>
+                  </View>
+                )}
               </View>
             )}
-          </View>
-        )}
+
+            {/* Back Image or Placeholder */}
+            {onCaptureBackImage && (
+              <TouchableOpacity
+                style={styles.imageSlot}
+                onPress={onCaptureBackImage}
+                activeOpacity={0.7}
+              >
+                {backImageState ? (
+                  <>
+                    <Image
+                      source={{ uri: backImageState }}
+                      style={styles.cardImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.imageLabel}>
+                      <Text style={styles.imageLabelText}>Back</Text>
+                    </View>
+                    {isProcessingOCR && (
+                      <View style={styles.ocrOverlay}>
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                        <Text style={styles.ocrText}>Processing...</Text>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.placeholderContainer}>
+                    <Ionicons name="camera-outline" size={48} color="#9CA3AF" />
+                    <Text style={styles.placeholderText}>Tap to scan</Text>
+                    <Text style={styles.placeholderSubtext}>back of card</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </View>
 
         {/* Form fields */}
         <View style={styles.form}>
@@ -435,16 +578,31 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  imagesSection: {
+    paddingVertical: 16,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  imagesSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  imagesScrollView: {
     paddingHorizontal: 16,
   },
-  imageContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
+  imagesScrollContent: {
+    gap: 12,
   },
-  cardImage: {
+  imageSlot: {
     width: 280,
     height: 176,
     borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -453,8 +611,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageLabel: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(37, 99, 235, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  imageLabelText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+  },
+  placeholderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 8,
+  },
+  placeholderSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
   },
   form: {
+    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   actions: {
@@ -485,18 +685,20 @@ const styles = StyleSheet.create({
   },
   ocrOverlay: {
     position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(37, 99, 235, 0.9)',
-    borderRadius: 8,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   ocrText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '500',
-    textAlign: 'center',
   },
 });

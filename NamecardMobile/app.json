@@ -1,23 +1,24 @@
 {
   "expo": {
-    "name": "NAMECARD.MY",
-    "slug": "namecard-my",
+    "name": "WhatsCard",
+    "slug": "whatscard",
     "owner": "jacobai",
     "version": "1.0.0",
+    "sdkVersion": "53.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#3B82F6"
+      "backgroundColor": "#4A7A5C"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.namecardmy.app",
+      "bundleIdentifier": "com.whatscard.app",
       "buildNumber": "1",
       "icon": "./assets/icon/icon.png",
       "infoPlist": {
@@ -29,18 +30,16 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon/icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#4A7A5C"
       },
-      "package": "com.namecardmy.app",
+      "package": "com.whatscard.app",
       "versionCode": 1,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "RECORD_AUDIO"
-      ],
-      "buildType": "apk",
-      "googleServicesFile": "./google-services.json"
+      ]
     },
     "web": {
       "favicon": "./assets/icon/icon.png",
@@ -54,7 +53,7 @@
     "plugins": [
       "expo-camera",
       "expo-media-library",
-      "expo-audio",
+      "expo-av",
       "expo-file-system",
       "expo-document-picker",
       "expo-font"

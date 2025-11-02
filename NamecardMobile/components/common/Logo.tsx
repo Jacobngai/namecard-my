@@ -19,8 +19,8 @@ export const Logo: React.FC<LogoProps> = ({
 
   // Use white logo on dark backgrounds, black logo on light backgrounds
   const logoSource = isDark
-    ? require('../assets/images/logo-white.png')
-    : require('../assets/images/logo-black.png');
+    ? require('../../assets/images/logo-white.png')
+    : require('../../assets/images/logo-black.png');
 
   return (
     <Image
@@ -54,8 +54,8 @@ export const AnimatedLogo: React.FC<LogoProps> = (props) => {
   const isDark = props.forceTheme ? props.forceTheme === 'dark' : colorScheme === 'dark';
 
   const logoSource = isDark
-    ? require('../assets/images/logo-white.png')
-    : require('../assets/images/logo-black.png');
+    ? require('../../assets/images/logo-white.png')
+    : require('../../assets/images/logo-black.png');
 
   return (
     <AnimatedImage

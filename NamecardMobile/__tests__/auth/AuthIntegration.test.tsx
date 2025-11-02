@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import App from '../../App';
-import { AuthScreen } from '../../components/AuthScreen';
+import { AuthScreen } from '../../components/screens/AuthScreen';
 import { SupabaseService } from '../../services/supabase';
 import { mockAuthResponses, mockSupabaseService } from '../../__mocks__/supabase.mock';
 

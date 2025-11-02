@@ -1,3 +1,10 @@
+---
+name: contact-service-manager
+description: Manage the unified ContactService layer that bridges components with storage, ensuring offline-first operation and optional Supabase synchronization.
+tools: Glob, Grep, Read, Edit, Write, Bash
+model: sonnet
+---
+
 # Contact Service Manager Agent
 
 ## Purpose

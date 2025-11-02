@@ -13,8 +13,22 @@ export interface Contact {
   email: string;
   address: string;
   imageUrl: string;
+  backImageUrl?: string; // Optional back image of business card
   addedDate: string;
   lastContact?: string;
+  groupIds?: string[]; // Array of group IDs this contact belongs to
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  color: string; // Hex color code for visual identification
+  icon?: string; // Ionicons icon name
+  contactCount: number; // Cached count for performance
+  createdAt: string;
+  updatedAt: string;
+  userId?: string; // For cloud sync
 }
 
 export type Screen = 'Camera' | 'Contacts' | 'Reminders' | 'Profile' | 'ContactForm' | 'ContactDetail';

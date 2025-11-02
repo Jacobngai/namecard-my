@@ -17,12 +17,22 @@ export async function autoCropBusinessCard(imageUri: string): Promise<CropResult
   try {
     console.log('🔄 Starting auto-crop process...');
 
-    // First, get image info and fix orientation
-    const image = await ImageManipulator.manipulateAsync(
+    // First, normalize image orientation based on EXIF data
+    // This ensures the image is always displayed correctly regardless of device orientation
+    const normalizedImage = await ImageManipulator.manipulateAsync(
       imageUri,
-      [],
-      { format: ImageManipulator.SaveFormat.JPEG }
+      [
+        // Apply EXIF orientation normalization
+        // This automatically rotates the image based on its EXIF orientation tag
+        { resize: { width: 2000 } } // Resize to max width while preserving aspect ratio
+      ],
+      {
+        format: ImageManipulator.SaveFormat.JPEG,
+        compress: 0.9
+      }
     );
+
+    const image = normalizedImage;
 
     console.log(`📐 Original image dimensions: ${image.width}x${image.height}`);
 
@@ -31,129 +41,50 @@ export async function autoCropBusinessCard(imageUri: string): Promise<CropResult
     const FRAME_WIDTH_RATIO = 0.8;
     const FRAME_HEIGHT_RATIO = 0.6;
 
-    // Calculate the frame position relative to the full camera view
-    // The frame is centered on screen
-    const frameWidthOnScreen = screenWidth * FRAME_WIDTH_RATIO;
-    const frameHeightOnScreen = frameWidthOnScreen * FRAME_HEIGHT_RATIO;
+    // Calculate crop dimensions based on the normalized image
+    // The frame is centered and takes up 80% of width
+    const horizontalMargin = (1 - FRAME_WIDTH_RATIO) / 2;
 
-    // The camera view fills the entire screen height minus header and controls
-    // We need to map screen coordinates to image coordinates
-    const screenAspectRatio = screenWidth / screenHeight;
-    const imageAspectRatio = image.width / image.height;
+    // Calculate crop area
+    const cropWidth = image.width * FRAME_WIDTH_RATIO;
+    const cropHeight = cropWidth * FRAME_HEIGHT_RATIO;
+    const cropX = image.width * horizontalMargin;
+    const cropY = (image.height - cropHeight) / 2; // Center vertically
 
-    let cropX: number;
-    let cropY: number;
-    let cropWidth: number;
-    let cropHeight: number;
+    console.log(`✂️ Cropping normalized image: x=${Math.round(cropX)}, y=${Math.round(cropY)}, w=${Math.round(cropWidth)}, h=${Math.round(cropHeight)}`);
 
-    // Check if image needs rotation (common issue with phone cameras)
-    const isRotated = imageAspectRatio < 1 && screenAspectRatio > 1;
-
-    if (isRotated) {
-      console.log('🔄 Image appears to be rotated, applying rotation fix...');
-
-      // Rotate the image 90 degrees clockwise first
-      const rotatedImage = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [{ rotate: -90 }],
-        { format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      // Recalculate with rotated dimensions
-      const rotatedWidth = rotatedImage.width;
-      const rotatedHeight = rotatedImage.height;
-
-      // Calculate crop area based on frame position
-      // The frame is centered, so calculate margins
-      const horizontalMargin = (1 - FRAME_WIDTH_RATIO) / 2;
-      const verticalCenterRatio = 0.5; // Frame is vertically centered
-
-      cropWidth = rotatedWidth * FRAME_WIDTH_RATIO;
-      cropHeight = cropWidth * FRAME_HEIGHT_RATIO;
-      cropX = rotatedWidth * horizontalMargin;
-      cropY = (rotatedHeight - cropHeight) / 2;
-
-      console.log(`✂️ Cropping rotated image: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
-
-      // Apply crop to rotated image
-      const finalResult = await ImageManipulator.manipulateAsync(
-        rotatedImage.uri,
-        [
-          {
-            crop: {
-              originX: Math.max(0, Math.round(cropX)),
-              originY: Math.max(0, Math.round(cropY)),
-              width: Math.min(Math.round(cropWidth), rotatedWidth),
-              height: Math.min(Math.round(cropHeight), rotatedHeight),
-            },
-          },
-          // Resize for optimal OCR
-          {
-            resize: {
-              width: 1200,
-            },
-          },
-        ],
+    // Apply crop to the normalized image
+    const croppedResult = await ImageManipulator.manipulateAsync(
+      image.uri,
+      [
         {
-          compress: 0.9,
-          format: ImageManipulator.SaveFormat.JPEG,
-        }
-      );
-
-      console.log(`✅ Auto-crop completed: ${finalResult.width}x${finalResult.height}`);
-
-      return {
-        uri: finalResult.uri,
-        width: finalResult.width,
-        height: finalResult.height,
-      };
-    } else {
-      // Image is already in correct orientation
-      console.log('📸 Image orientation is correct, applying crop...');
-
-      // Calculate crop area for correctly oriented image
-      const horizontalMargin = (1 - FRAME_WIDTH_RATIO) / 2;
-
-      cropWidth = image.width * FRAME_WIDTH_RATIO;
-      cropHeight = cropWidth * FRAME_HEIGHT_RATIO;
-      cropX = image.width * horizontalMargin;
-      cropY = (image.height - cropHeight) / 2;
-
-      console.log(`✂️ Cropping: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
-
-      // Apply crop
-      const manipResult = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [
-          {
-            crop: {
-              originX: Math.max(0, Math.round(cropX)),
-              originY: Math.max(0, Math.round(cropY)),
-              width: Math.min(Math.round(cropWidth), image.width),
-              height: Math.min(Math.round(cropHeight), image.height),
-            },
+          crop: {
+            originX: Math.max(0, Math.round(cropX)),
+            originY: Math.max(0, Math.round(cropY)),
+            width: Math.min(Math.round(cropWidth), image.width),
+            height: Math.min(Math.round(cropHeight), image.height),
           },
-          // Resize for optimal OCR
-          {
-            resize: {
-              width: 1200,
-            },
-          },
-        ],
+        },
+        // Resize for optimal OCR
         {
-          compress: 0.9,
-          format: ImageManipulator.SaveFormat.JPEG,
-        }
-      );
+          resize: {
+            width: 1200,
+          },
+        },
+      ],
+      {
+        compress: 0.9,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    );
 
-      console.log(`✅ Auto-crop completed: ${manipResult.width}x${manipResult.height}`);
+    console.log(`✅ Auto-crop completed: ${croppedResult.width}x${croppedResult.height}`);
 
-      return {
-        uri: manipResult.uri,
-        width: manipResult.width,
-        height: manipResult.height,
-      };
-    }
+    return {
+      uri: croppedResult.uri,
+      width: croppedResult.width,
+      height: croppedResult.height,
+    };
   } catch (error) {
     console.error('❌ Auto-crop failed:', error);
     // If crop fails, return original image
@@ -166,27 +97,12 @@ export async function autoCropBusinessCard(imageUri: string): Promise<CropResult
 }
 
 /**
+ * @deprecated This function has no implementation. Use normal image processing instead.
  * Enhance image for better OCR results
  */
 export async function enhanceForOCR(imageUri: string): Promise<string> {
-  try {
-    // Apply image enhancements for better OCR
-    const result = await ImageManipulator.manipulateAsync(
-      imageUri,
-      [
-        // Increase contrast and brightness slightly
-        // Note: Expo doesn't support advanced filters,
-        // so we're limited to basic operations
-      ],
-      {
-        compress: 0.9,
-        format: ImageManipulator.SaveFormat.JPEG,
-      }
-    );
-
-    return result.uri;
-  } catch (error) {
-    console.error('Image enhancement failed:', error);
-    return imageUri;
-  }
+  // This function currently has no implementation
+  // Expo ImageManipulator doesn't support advanced filters
+  // Returns original image URI
+  return imageUri;
 }

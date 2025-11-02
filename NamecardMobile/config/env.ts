@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 // Environment configuration with proper typing
 interface EnvConfig {
   GEMINI_API_KEY: string;
+  GOOGLE_VISION_API_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   OPENAI_API_KEY: string;
@@ -17,7 +18,8 @@ const getEnvVar = (name: string, fallback: string = ''): string => {
 
 // Export environment configuration
 export const ENV: EnvConfig = {
-  GEMINI_API_KEY: getEnvVar('GEMINI_API_KEY', 'AIzaSyD5XdQMEppG55KMPIK2xhe4M7Rd04J9jFE'), // Hardcoded for now
+  GEMINI_API_KEY: getEnvVar('GEMINI_API_KEY'),
+  GOOGLE_VISION_API_KEY: getEnvVar('GOOGLE_VISION_API_KEY'),
   SUPABASE_URL: getEnvVar('SUPABASE_URL'),
   SUPABASE_ANON_KEY: getEnvVar('SUPABASE_ANON_KEY'),
   OPENAI_API_KEY: getEnvVar('OPENAI_API_KEY'),

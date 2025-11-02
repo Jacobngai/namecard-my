@@ -4,21 +4,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Alert, ActivityIndicator, View, Text, StyleSheet, Linking } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CameraScreen } from './components/CameraScreen';
-import { ContactForm } from './components/ContactForm';
-import { ContactList } from './components/ContactList';
-import { ProfileScreen } from './components/ProfileScreen';
-import { SettingsScreen } from './components/SettingsScreen';
-import { Contact } from './types';
+import { Alert, ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { CameraScreen } from './components/screens/CameraScreen';
+import { ContactForm } from './components/business/ContactForm';
+import { ContactList } from './components/screens/ContactList';
+import { ProfileScreen } from './components/screens/ProfileScreen';
+import { SettingsScreen } from './components/screens/SettingsScreen';
+import { Contact, Group } from './types';
 import { ContactService } from './services/contactService';
+import { GroupService } from './services/groupService';
 import { SupabaseService } from './services/supabase';
 import { AuthManager } from './services/authManager';
-import { ENV, validateEnv } from './config/env';
-import { AuthScreen } from './components/AuthScreen';
-import { SplashScreen } from './components/SplashScreen';
-import { ContactDetailModal } from './components/ContactDetailModal';
+import { validateEnv } from './config/env';
+import { AuthScreen } from './components/screens/AuthScreen';
+import { SplashScreen } from './components/screens/SplashScreen';
+import { ContactDetailModal } from './components/business/ContactDetailModal';
+import { useGroups } from './hooks/useGroups';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -27,14 +28,23 @@ export default function App() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [scannedCardData, setScannedCardData] = useState<Partial<Contact> | null>(null);
   const [pendingImageUri, setPendingImageUri] = useState<string | undefined>(undefined);
+  const [pendingBackImageUri, setPendingBackImageUri] = useState<string | undefined>(undefined);
   const [shouldProcessOCR, setShouldProcessOCR] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showSplash, setShowSplash] = useState(true);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showContactDetail, setShowContactDetail] = useState(false);
+
+  // Initialize groups hook
+  const {
+    groups,
+    createGroup,
+    deleteGroup,
+    addContactsToGroup,
+    recalculateContactCounts,
+  } = useGroups(contacts);
 
   // Initialize app and validate environment
   useEffect(() => {
@@ -50,8 +60,9 @@ export default function App() {
         console.warn('📱 Running in offline mode');
       }
 
-      // Initialize contact service (works offline)
+      // Initialize services (works offline)
       await ContactService.init();
+      await GroupService.init();
 
       // Load contacts from local storage first
       await loadContacts();
@@ -70,11 +81,9 @@ export default function App() {
         console.log('📱 Auth check failed, continuing in offline mode');
       }
 
-      setIsInitialized(true);
     } catch (error) {
       console.error('⚠️ App initialization warning:', error);
       // Continue without crashing
-      setIsInitialized(true);
     } finally {
       setIsLoading(false);
     }
@@ -92,46 +101,22 @@ export default function App() {
     }
   };
 
-  const setupRealtimeSync = () => {
-    // Realtime sync is optional - only if authenticated
-    if (isAuthenticated) {
-      try {
-        const subscription = SupabaseService.subscribeToContacts(
-          // On insert
-          (newContact) => {
-            setContacts(prev => [newContact, ...prev]);
-            console.log('🔄 New contact synced:', newContact.name);
-          },
-          // On update
-          (updatedContact) => {
-            setContacts(prev => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
-            console.log('🔄 Contact updated:', updatedContact.name);
-          },
-          // On delete
-          (deletedId) => {
-            setContacts(prev => prev.filter(c => c.id !== deletedId));
-            console.log('🔄 Contact deleted:', deletedId);
-          }
-        );
-
-        // Cleanup subscription on unmount
-        return () => {
-          subscription.unsubscribe();
-        };
-      } catch (error) {
-        console.log('⚠️ Realtime sync not available:', error);
-      }
-    }
-  };
-
   const handleScanCard = (cardData: Partial<Contact>) => {
     setScannedCardData(cardData);
   };
 
-  const handleNavigateToForm = (imageUri: string, processOCR: boolean) => {
-    setPendingImageUri(imageUri);
-    setShouldProcessOCR(processOCR);
-    setScannedCardData(null); // Clear any previous scanned data
+  const handleNavigateToForm = (imageUri: string, processOCR: boolean, isBackImage: boolean = false) => {
+    if (isBackImage) {
+      // Capturing back image
+      setPendingBackImageUri(imageUri);
+      setShouldProcessOCR(false); // Don't auto-process, will be handled in ContactForm
+    } else {
+      // Capturing front image
+      setPendingImageUri(imageUri);
+      setPendingBackImageUri(undefined); // Clear any previous back image
+      setShouldProcessOCR(processOCR);
+      setScannedCardData(null); // Clear any previous scanned data
+    }
   };
 
   const handleSaveContact = async (contactData: Partial<Contact>) => {
@@ -146,9 +131,10 @@ export default function App() {
       // Update local state
       setContacts(prev => [newContact, ...prev]);
 
-      // Clear scanned data and pending image
+      // Clear scanned data and pending images
       setScannedCardData(null);
       setPendingImageUri(undefined);
+      setPendingBackImageUri(undefined);
       setShouldProcessOCR(false);
 
       // Show non-blocking success message
@@ -215,106 +201,56 @@ export default function App() {
     // The navigation will happen automatically when scannedCardData is set
   };
 
-  const handleAutoProcess = async (imageUri: string) => {
+  const handleAddContactsToGroups = async (contactIds: string[], groupIds: string[]) => {
     try {
-      console.log('🚀 Auto-processing card...');
+      console.log('🔷 Adding contacts to groups:', { contactIds, groupIds });
 
-      // Import services
-      const { GeminiOCRService } = require('./services/geminiOCR');
-
-      // Show processing notification
-      Alert.alert(
-        'Processing Card',
-        'Extracting information and saving contact...',
-        [],
-        { cancelable: false }
-      );
-
-      // Process OCR using Gemini 2.0 Flash
-      const ocrData = await GeminiOCRService.processBusinessCard(imageUri);
-
-      if (!ocrData.name) {
-        Alert.alert('No Name Detected', 'Could not extract name from the card. Please try again.');
-        return;
+      // Add contacts to each selected group
+      for (const groupId of groupIds) {
+        console.log('🔷 Adding to group:', groupId);
+        await addContactsToGroup(contactIds, groupId);
       }
 
-      // Save contact (offline-first)
-      const newContact = await ContactService.createContact({
-        ...ocrData,
-        imageUrl: imageUri,
-      });
+      // Reload contacts to get updated groupIds
+      console.log('🔷 Reloading contacts...');
+      await loadContacts();
 
-      console.log('✅ Contact auto-saved:', newContact.name);
+      // Recalculate group contact counts
+      console.log('🔷 Recalculating group counts...');
+      await recalculateContactCounts();
 
-      // Check if auto WhatsApp is enabled
-      const settings = await AsyncStorage.getItem('appSettings');
-      const parsed = settings ? JSON.parse(settings) : {};
-
-      if (parsed.autoWhatsApp) {
-        // Format phone for WhatsApp
-        const whatsappPhone = ocrData.phones?.mobile1 ||
-                             ocrData.phones?.mobile2 ||
-                             ocrData.phones?.office ||
-                             ocrData.phone;
-
-        if (whatsappPhone) {
-          // Format phone number with country code
-          let cleanPhone = whatsappPhone.replace(/[^+\d]/g, '');
-
-          if (cleanPhone.startsWith('01')) {
-            cleanPhone = '60' + cleanPhone.substring(1);
-          } else if (cleanPhone.startsWith('0')) {
-            cleanPhone = '60' + cleanPhone.substring(1);
-          } else if (!cleanPhone.startsWith('60') && !cleanPhone.startsWith('+')) {
-            cleanPhone = '60' + cleanPhone;
-          } else if (cleanPhone.startsWith('+')) {
-            cleanPhone = cleanPhone.substring(1);
-          }
-
-          const introMessage = `Hi ${ocrData.name}! Nice meeting you. Let's stay connected!`;
-          const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(introMessage)}`;
-
-          // Show quick success before opening WhatsApp
-          setTimeout(() => {
-            Alert.alert(
-              'Contact Saved!',
-              `${newContact.name} has been added to your contacts.`,
-              [{ text: 'OK' }],
-              { cancelable: true }
-            );
-          }, 100);
-
-          // Open WhatsApp
-          setTimeout(async () => {
-            try {
-              const canOpen = await Linking.canOpenURL(whatsappUrl);
-              if (canOpen) {
-                await Linking.openURL(whatsappUrl);
-              }
-            } catch (error) {
-              console.error('Failed to open WhatsApp:', error);
-            }
-          }, 500);
-        } else {
-          Alert.alert('Success', `Contact "${newContact.name}" saved! No phone number found for WhatsApp.`);
-        }
-      } else {
-        // Just show success if not auto-WhatsApp
-        Alert.alert('Success', `Contact "${newContact.name}" saved successfully!`);
-      }
-
-      // Update local state
-      setContacts(prev => [newContact, ...prev]);
-
+      console.log('✅ Successfully added contacts to groups');
     } catch (error) {
-      console.error('❌ Auto-process failed:', error);
-      Alert.alert(
-        'Processing Failed',
-        'Failed to process the business card. Please try manual mode.',
-        [{ text: 'OK' }]
-      );
+      console.error('❌ Failed to add contacts to groups:', error);
+      throw error;
     }
   };
+
+  const handleCreateGroup = async (groupData: Omit<Group, 'id' | 'createdAt' | 'updatedAt' | 'contactCount'>): Promise<Group> => {
+    try {
+      console.log('🔷 Creating group:', groupData.name);
+      const newGroup = await createGroup(groupData);
+      console.log('✅ Group created successfully:', newGroup);
+      return newGroup; // Return the created group so modal can get its ID
+    } catch (error) {
+      console.error('❌ Failed to create group:', error);
+      Alert.alert('Error', 'Failed to create group');
+      throw error; // Re-throw to maintain Promise<Group> type
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      console.log('🔷 Deleting group:', groupId);
+      await deleteGroup(groupId);
+      console.log('✅ Group deleted successfully');
+      Alert.alert('Success', 'Group deleted');
+    } catch (error) {
+      console.error('❌ Failed to delete group:', error);
+      Alert.alert('Error', 'Failed to delete group');
+    }
+  };
+
 
   // Camera Stack Navigator
   function CameraStack() {
@@ -326,19 +262,10 @@ export default function App() {
           {({ navigation }) => (
             <CameraScreen
               onScanCard={handleScanCard}
-              onNavigateToForm={async (imageUri, processOCR) => {
-                // Check if auto mode is enabled
-                const settings = await AsyncStorage.getItem('appSettings');
-                const parsed = settings ? JSON.parse(settings) : {};
-
-                if (parsed.autoWhatsApp || parsed.skipReview) {
-                  // Auto mode: process in background
-                  handleAutoProcess(imageUri);
-                } else {
-                  // Normal mode: navigate to form
-                  handleNavigateToForm(imageUri, processOCR);
-                  navigation.navigate('ContactForm');
-                }
+              onNavigateToForm={(imageUri, processOCR) => {
+                // Always navigate to form for manual review
+                handleNavigateToForm(imageUri, processOCR, false);
+                navigation.navigate('ContactForm');
               }}
               onNavigateToSettings={() => navigation.navigate('Settings')}
             />
@@ -349,6 +276,7 @@ export default function App() {
             <ContactForm
               scannedData={scannedCardData}
               imageUri={pendingImageUri}
+              backImageUri={pendingBackImageUri}
               processOCR={shouldProcessOCR}
               onSave={async (contactData) => {
                 await handleSaveContact(contactData);
@@ -357,9 +285,27 @@ export default function App() {
               }}
               onBack={() => {
                 setPendingImageUri(undefined);
+                setPendingBackImageUri(undefined);
                 setShouldProcessOCR(false);
                 navigation.goBack();
               }}
+              onCaptureBackImage={() => {
+                // Navigate to camera to capture back image
+                navigation.navigate('CameraBack');
+              }}
+            />
+          )}
+        </CameraStackNavigator.Screen>
+        <CameraStackNavigator.Screen name="CameraBack">
+          {({ navigation }) => (
+            <CameraScreen
+              onScanCard={handleScanCard}
+              onNavigateToForm={(imageUri, processOCR) => {
+                // Capture back image and return to form
+                handleNavigateToForm(imageUri, processOCR, true);
+                navigation.navigate('ContactForm');
+              }}
+              onNavigateToSettings={() => navigation.navigate('Settings')}
             />
           )}
         </CameraStackNavigator.Screen>
@@ -375,7 +321,7 @@ export default function App() {
   }
 
   // Contacts Stack Navigator
-  function ContactsStack() {
+  function ContactsStack({ navigation }: any) {
     const ContactsNavigator = createStackNavigator();
 
     return (
@@ -384,13 +330,16 @@ export default function App() {
           {() => (
             <ContactList
               contacts={contacts}
+              groups={groups}
               onContactSelect={handleContactSelect}
               onAddContact={() => {
-                // Navigate to Camera tab
-                // Note: This requires access to navigation prop from parent
-                console.log('Navigate to Add Contact');
+                // Navigate to Camera tab to scan card
+                navigation.navigate('Camera');
               }}
               onDeleteContacts={handleBulkContactDelete}
+              onAddContactsToGroups={handleAddContactsToGroups}
+              onCreateGroup={handleCreateGroup}
+              onDeleteGroup={handleDeleteGroup}
             />
           )}
         </ContactsNavigator.Screen>
@@ -421,7 +370,6 @@ export default function App() {
     // Initialize app after authentication
     await SupabaseService.initializeStorage();
     await loadContacts();
-    setupRealtimeSync();
   };
 
   // Show splash screen
@@ -440,8 +388,8 @@ export default function App() {
       <View style={loadingStyles.container}>
         <StatusBar style="auto" />
         <View style={loadingStyles.content}>
-          <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={loadingStyles.title}>NAMECARD.MY</Text>
+          <ActivityIndicator size="large" color="#4A7A5C" />
+          <Text style={loadingStyles.title}>WhatsCard</Text>
           <Text style={loadingStyles.subtitle}>Initializing...</Text>
         </View>
       </View>

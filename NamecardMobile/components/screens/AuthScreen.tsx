@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SupabaseService } from '../services/supabase';
-import { Logo } from './Logo';
+import { SupabaseService } from '../../services/supabase';
+import { Logo } from '../common/Logo';
 
 interface AuthScreenProps {
   onAuthSuccess: (user: any) => void;
@@ -226,7 +226,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             <View style={styles.logoContainer}>
               <Logo width={100} height={100} forceTheme="light" />
             </View>
-            <Text style={styles.title}>NAMECARD.MY</Text>
+            <Text style={styles.title}>WhatsCard</Text>
             <Text style={styles.subtitle}>Smart Business Networking</Text>
           </View>
 
