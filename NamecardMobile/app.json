@@ -1,15 +1,16 @@
 {
   "expo": {
     "name": "WhatsCard",
-    "slug": "whatscard",
+    "slug": "namecard-my",
     "owner": "jacobai",
     "version": "1.0.0",
     "sdkVersion": "53.0.0",
+    "scheme": "whatscard",
     "orientation": "portrait",
-    "icon": "./assets/icon/icon.png",
+    "icon": "./assets/splash-icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#4A7A5C"
     },
@@ -19,35 +20,60 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.whatscard.app",
-      "buildNumber": "1",
-      "icon": "./assets/icon/icon.png",
+      "icon": "./assets/splash-icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to scan business cards.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to save and select business card images.",
-        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice notes."
-      }
+        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice notes.",
+        "NSContactsUsageDescription": "This app needs access to contacts to save scanned business cards.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to add location data to business cards."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:whatscard.my"
+      ]
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon/icon.png",
+        "foregroundImage": "./assets/splash-icon.png",
         "backgroundColor": "#4A7A5C"
       },
       "package": "com.whatscard.app",
-      "versionCode": 1,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "READ_CONTACTS",
+        "WRITE_CONTACTS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "whatscard.my",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
-      "favicon": "./assets/icon/icon.png",
+      "favicon": "./assets/splash-icon.png",
       "bundler": "metro"
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "66d97936-e847-4b80-a6c7-bf90ea4a0d80"
       }
     },
     "plugins": [
@@ -58,8 +84,10 @@
       "expo-document-picker",
       "expo-font"
     ],
-    "description": "Smart Business Card Scanner & Contact Management App",
+    "description": "WhatsCard - Smart Business Card Scanner. Scan, save, and connect with anyone on WhatsApp instantly. Transform paper cards into digital connections with AI-powered OCR technology.",
     "primaryColor": "#3B82F6",
-    "backgroundColor": "#FFFFFF"
+    "backgroundColor": "#FFFFFF",
+    "privacyPolicy": "https://whatscard.my/privacy",
+    "category": "Business"
   }
 }

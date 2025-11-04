@@ -8,8 +8,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug",
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleDebug",
         "credentialsSource": "remote"
       },
       "ios": {
@@ -20,8 +20,8 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
         "credentialsSource": "remote"
       },
       "ios": {
@@ -53,8 +53,9 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-app-id"
+        "appleId": "jacobai@example.com",
+        "ascAppId": "TBD",
+        "appleTeamId": "TBD"
       }
     }
   }
