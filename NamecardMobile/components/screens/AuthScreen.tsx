@@ -29,10 +29,42 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({ email: '', password: '', confirmPassword: '', name: '' });
+
+  const validateEmail = (email: string): string => {
+    if (!email) return 'Email is required';
+    if (!/\S+@\S+\.\S+/.test(email)) return 'Invalid email format';
+    return '';
+  };
+
+  const validatePassword = (password: string): string => {
+    if (!password) return 'Password is required';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    return '';
+  };
+
+  const validateName = (name: string): string => {
+    if (!name) return 'Name is required';
+    if (name.length < 2) return 'Name must be at least 2 characters';
+    return '';
+  };
+
+  const validateConfirmPassword = (password: string, confirmPassword: string): string => {
+    if (!confirmPassword) return 'Please confirm your password';
+    if (password !== confirmPassword) return 'Passwords do not match';
+    return '';
+  };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+    // Clear previous errors
+    setErrors({ email: '', password: '', confirmPassword: '', name: '' });
+
+    // Validate fields
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+
+    if (emailError || passwordError) {
+      setErrors({ email: emailError, password: passwordError, confirmPassword: '', name: '' });
       return;
     }
 
@@ -69,18 +101,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   };
 
   const handleRegister = async () => {
-    if (!email || !password || !name) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
+    // Clear previous errors
+    setErrors({ email: '', password: '', confirmPassword: '', name: '' });
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
+    // Validate fields
+    const nameError = validateName(name);
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+    const confirmPasswordError = validateConfirmPassword(password, confirmPassword);
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+    if (nameError || emailError || passwordError || confirmPasswordError) {
+      setErrors({
+        name: nameError,
+        email: emailError,
+        password: passwordError,
+        confirmPassword: confirmPasswordError
+      });
       return;
     }
 
@@ -180,8 +216,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
   };
 
   const handleForgotPassword = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+    // Clear previous errors
+    setErrors({ email: '', password: '', confirmPassword: '', name: '' });
+
+    // Validate email
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setErrors({ email: emailError, password: '', confirmPassword: '', name: '' });
       return;
     }
 
@@ -210,7 +251,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
 
   return (
     <LinearGradient
-      colors={['#3B82F6', '#8B5CF6']}
+      colors={['#4A7A5C', '#3B6B4E', '#2D5A40']}
       style={styles.gradient}
     >
       <KeyboardAvoidingView
@@ -257,42 +298,58 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             {/* Login Form */}
             {mode === 'login' && (
               <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View>
+                  <View style={[styles.inputContainer, errors.email && styles.inputContainerError]}>
+                    <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      placeholderTextColor="#9CA3AF"
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        if (errors.email) {
+                          setErrors(prev => ({ ...prev, email: validateEmail(text) }));
+                        }
+                      }}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                    testID="eye-icon"
-                  >
-                    <Ionicons
-                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color="#6B7280"
+                <View>
+                  <View style={[styles.inputContainer, errors.password && styles.inputContainerError]}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      placeholderTextColor="#9CA3AF"
+                      value={password}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (errors.password) {
+                          setErrors(prev => ({ ...prev, password: validatePassword(text) }));
+                        }
+                      }}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
                     />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={styles.eyeIcon}
+                      testID="eye-icon"
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
                 </View>
 
                 <TouchableOpacity
@@ -325,78 +382,110 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             {/* Register Form */}
             {mode === 'register' && (
               <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="person-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Full Name"
-                    placeholderTextColor="#9CA3AF"
-                    value={name}
-                    onChangeText={setName}
-                    autoCapitalize="words"
-                  />
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Password (min 6 characters)"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                    testID="eye-icon"
-                  >
-                    <Ionicons
-                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color="#6B7280"
+                <View>
+                  <View style={[styles.inputContainer, errors.name && styles.inputContainerError]}>
+                    <Ionicons name="person-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Full Name"
+                      placeholderTextColor="#9CA3AF"
+                      value={name}
+                      onChangeText={(text) => {
+                        setName(text);
+                        if (errors.name) {
+                          setErrors(prev => ({ ...prev, name: validateName(text) }));
+                        }
+                      }}
+                      autoCapitalize="words"
                     />
-                  </TouchableOpacity>
+                  </View>
+                  {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Confirm Password"
-                    placeholderTextColor="#9CA3AF"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.eyeIcon}
-                    testID="eye-icon"
-                  >
-                    <Ionicons
-                      name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color="#6B7280"
+                <View>
+                  <View style={[styles.inputContainer, errors.email && styles.inputContainerError]}>
+                    <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      placeholderTextColor="#9CA3AF"
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        if (errors.email) {
+                          setErrors(prev => ({ ...prev, email: validateEmail(text) }));
+                        }
+                      }}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
-                  </TouchableOpacity>
+                  </View>
+                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                </View>
+
+                <View>
+                  <View style={[styles.inputContainer, errors.password && styles.inputContainerError]}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password (min 6 characters)"
+                      placeholderTextColor="#9CA3AF"
+                      value={password}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (errors.password) {
+                          setErrors(prev => ({ ...prev, password: validatePassword(text) }));
+                        }
+                      }}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={styles.eyeIcon}
+                      testID="eye-icon"
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                </View>
+
+                <View>
+                  <View style={[styles.inputContainer, errors.confirmPassword && styles.inputContainerError]}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Confirm Password"
+                      placeholderTextColor="#9CA3AF"
+                      value={confirmPassword}
+                      onChangeText={(text) => {
+                        setConfirmPassword(text);
+                        if (errors.confirmPassword) {
+                          setErrors(prev => ({ ...prev, confirmPassword: validateConfirmPassword(password, text) }));
+                        }
+                      }}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={styles.eyeIcon}
+                      testID="eye-icon"
+                    >
+                      <Ionicons
+                        name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
                 </View>
 
                 <TouchableOpacity
@@ -421,18 +510,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                   Enter your email and we'll send you a reset link
                 </Text>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View>
+                  <View style={[styles.inputContainer, errors.email && styles.inputContainerError]}>
+                    <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      placeholderTextColor="#9CA3AF"
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        if (errors.email) {
+                          setErrors(prev => ({ ...prev, email: validateEmail(text) }));
+                        }
+                      }}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                 </View>
 
                 <TouchableOpacity
@@ -492,7 +589,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#FFFFFF',
   },
   formContainer: {
     backgroundColor: '#FFFFFF',
@@ -531,7 +628,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   activeTabText: {
-    color: '#3B82F6',
+    color: '#4A7A5C',
   },
   form: {
     gap: 16,
@@ -544,7 +641,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  inputContainerError: {
+    borderColor: '#EF4444',
+    borderWidth: 1.5,
   },
   inputIcon: {
     marginRight: 12,
@@ -558,23 +659,36 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 4,
   },
+  errorText: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
   button: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#4A7A5C',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '800',
   },
   linkText: {
-    color: '#3B82F6',
+    color: '#4A7A5C',
     fontSize: 14,
+    fontWeight: '600',
     textAlign: 'center',
     marginTop: 16,
+    textDecorationLine: 'underline',
   },
   forgotTitle: {
     fontSize: 20,

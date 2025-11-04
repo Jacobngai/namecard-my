@@ -83,40 +83,71 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
-// Mock Supabase
-jest.mock('./services/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
-      signInWithPassword: jest.fn(),
-      signUp: jest.fn(),
-      signOut: jest.fn(),
-      onAuthStateChange: jest.fn(() => ({
-        data: { subscription: { unsubscribe: jest.fn() } },
-      })),
-    },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn().mockReturnThis(),
+// Mock Supabase client singleton
+const mockSupabaseClient = {
+  auth: {
+    getSession: jest.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+    signInWithPassword: jest.fn(),
+    signUp: jest.fn(),
+    signOut: jest.fn(),
+    resetPasswordForEmail: jest.fn(),
+    onAuthStateChange: jest.fn(() => ({
+      data: { subscription: { unsubscribe: jest.fn() } },
     })),
   },
+  from: jest.fn(() => ({
+    select: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+  })),
+  storage: {
+    from: jest.fn(() => ({
+      upload: jest.fn(),
+      download: jest.fn(),
+      remove: jest.fn(),
+      list: jest.fn(),
+    })),
+  },
+};
+
+// Mock supabase services
+jest.mock('./services/supabase', () => ({
+  supabase: mockSupabaseClient,
 }));
 
-// Mock Alert
-global.Alert = {
-  alert: jest.fn((title, message, buttons) => {
-    if (buttons && buttons.length > 0) {
-      const firstButton = buttons[0];
-      if (firstButton.onPress) {
-        firstButton.onPress();
-      }
+// Mock supabaseClient module
+jest.mock('./services/supabaseClient', () => ({
+  getSupabaseClient: jest.fn(() => mockSupabaseClient),
+  supabase: mockSupabaseClient,
+}));
+
+// Mock Alert with clearable mock function
+// Note: Variable must be prefixed with 'mock' to be used in jest.mock()
+const mockAlertFn = jest.fn((title, message, buttons) => {
+  if (buttons && buttons.length > 0) {
+    const firstButton = buttons[0];
+    if (firstButton.onPress) {
+      firstButton.onPress();
     }
-  }),
+  }
+});
+
+// Create Alert mock object
+const AlertMock = {
+  alert: mockAlertFn,
 };
+
+// Set up Alert mock on global for tests that import it
+global.Alert = AlertMock;
+
+// Clear alert mock before each test
+beforeEach(() => {
+  mockAlertFn.mockClear();
+});
 
 // Silence console warnings in tests
 const originalWarn = console.warn;

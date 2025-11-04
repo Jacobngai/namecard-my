@@ -6,3 +6,5 @@ export { ProfileScreen } from './ProfileScreen';
 export { SettingsScreen } from './SettingsScreen';
 export { APITestScreen } from './APITestScreen';
 export { SplashScreen } from './SplashScreen';
+export { PaywallScreen } from './PaywallScreen';
+export { TestPaywallScreen } from './TestPaywallScreen';

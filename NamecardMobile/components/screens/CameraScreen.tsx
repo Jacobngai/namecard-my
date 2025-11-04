@@ -239,6 +239,9 @@ export function CameraScreen({ onScanCard, onNavigateToForm, onNavigateToSetting
           style={[styles.captureButton, isScanning && styles.captureButtonScanning]}
           onPress={handleCapture}
           disabled={isScanning}
+          accessibilityLabel="Capture business card"
+          accessibilityHint="Takes a photo of the business card in the frame"
+          accessibilityRole="button"
         >
           {isScanning ? (
             <ActivityIndicator color="#FFFFFF" size="small" />

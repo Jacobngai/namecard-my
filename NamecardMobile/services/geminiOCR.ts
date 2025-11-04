@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import { Contact } from '../types';
-import { ENV } from '../config/env';
+import Config from '../config/environment';
 import { normalizePhoneNumber } from '../utils/phoneFormatter';
 
 interface GeminiResponse {
@@ -225,7 +225,7 @@ ADDITIONAL RULES:
       };
 
       // Make request to Gemini API
-      const response = await fetch(`${this.API_URL}?key=${ENV.GEMINI_API_KEY}`, {
+      const response = await fetch(`${this.API_URL}?key=${Config.GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -327,22 +327,6 @@ ADDITIONAL RULES:
     };
   }
 
-  /**
-   * Clean and normalize phone number to international format
-   * Ensures all phone numbers have country code for WhatsApp integration
-   * @deprecated Use cleanPhoneNumberWithCountryCode instead
-   */
-  private static cleanPhoneNumber(phone: string): string {
-    if (!phone) return '';
-
-    // Remove any text labels but keep the number
-    const cleaned = phone
-      .replace(/^(mobile|hp|tel|phone|fax|office)[\s:]*\d?[\s:]*/i, '')
-      .trim();
-
-    // Normalize to international format with +60 country code (default Malaysia)
-    return normalizePhoneNumber(cleaned, '+60');
-  }
 
   /**
    * Clean and normalize phone number with detected country code
@@ -461,10 +445,10 @@ ADDITIONAL RULES:
    */
   static async validateApiKey(): Promise<boolean> {
     try {
-      if (!ENV.GEMINI_API_KEY) return false;
+      if (!Config.GEMINI_API_KEY) return false;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${ENV.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${Config.GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

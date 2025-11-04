@@ -108,7 +108,7 @@ export const isProduction = () => Config.APP_ENV === 'production';
 export const isDebugMode = () => Config.DEBUG_MODE;
 
 // Validate required configurations
-export const validateConfig = () => {
+export const validateConfig = (): { isValid: boolean; missingKeys: string[] } => {
   const required = [
     'SUPABASE_URL',
     'SUPABASE_ANON_KEY',
@@ -127,6 +127,11 @@ export const validateConfig = () => {
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }
   }
+
+  return {
+    isValid: missing.length === 0,
+    missingKeys: missing
+  };
 };
 
 // Debug logging

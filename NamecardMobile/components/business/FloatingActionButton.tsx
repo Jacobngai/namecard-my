@@ -140,6 +140,9 @@ export function FloatingActionButton({
                     <TouchableOpacity
                       style={styles.menuButton}
                       onPress={() => handleAction(onAddToGroup)}
+                      accessibilityLabel="Add to groups"
+                      accessibilityHint="Add selected contacts to one or more groups"
+                      accessibilityRole="button"
                     >
                       <View style={styles.menuIconContainer}>
                         <Ionicons name="people-outline" size={24} color="#2563EB" />
@@ -165,6 +168,9 @@ export function FloatingActionButton({
                     <TouchableOpacity
                       style={[styles.menuButton, styles.deleteButton]}
                       onPress={() => handleAction(onDelete)}
+                      accessibilityLabel="Delete contacts"
+                      accessibilityHint="Permanently delete selected contacts from your list"
+                      accessibilityRole="button"
                     >
                       <View style={[styles.menuIconContainer, styles.deleteIconContainer]}>
                         <Ionicons name="trash-outline" size={24} color="#EF4444" />
@@ -190,6 +196,9 @@ export function FloatingActionButton({
                     <TouchableOpacity
                       style={[styles.menuButton, styles.exportMenuButton]}
                       onPress={() => handleAction(onExport)}
+                      accessibilityLabel="Export contacts"
+                      accessibilityHint="Export selected contacts to CSV file for backup or sharing"
+                      accessibilityRole="button"
                     >
                       <View style={[styles.menuIconContainer, styles.exportIconContainer]}>
                         <Ionicons name="download-outline" size={24} color="#FFFFFF" />
@@ -258,6 +267,9 @@ export function FloatingActionButton({
                   <TouchableOpacity
                     style={styles.menuButton}
                     onPress={() => handleAction(onAddManually)}
+                    accessibilityLabel="Add contact manually"
+                    accessibilityHint="Opens form to manually enter contact information"
+                    accessibilityRole="button"
                   >
                     <View style={styles.menuIconContainer}>
                       <Ionicons name="person-add-outline" size={24} color="#2563EB" />
@@ -283,6 +295,9 @@ export function FloatingActionButton({
                   <TouchableOpacity
                     style={[styles.menuButton, styles.scanMenuButton]}
                     onPress={() => handleAction(onScanCard)}
+                    accessibilityLabel="Scan business card"
+                    accessibilityHint="Opens camera to scan a business card"
+                    accessibilityRole="button"
                   >
                     <View style={[styles.menuIconContainer, styles.scanIconContainer]}>
                       <Ionicons name="scan-outline" size={24} color="#FFFFFF" />

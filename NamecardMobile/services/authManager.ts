@@ -1,6 +1,16 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { SupabaseService } from './supabase';
 import { getSupabaseClient } from './supabaseClient';
+
+/**
+ * SECURITY FIX: Replaced AsyncStorage with SecureStore for JWT tokens
+ *
+ * SecureStore uses the device's secure keychain/keystore to encrypt
+ * sensitive data like authentication tokens, preventing unauthorized access.
+ *
+ * - iOS: Uses Keychain Services
+ * - Android: Uses Keystore system
+ */
 
 interface AuthSession {
   user: any;
@@ -72,7 +82,10 @@ export class AuthManager {
   }
 
   /**
-   * Store session in AsyncStorage for persistence
+   * Store session in SecureStore for persistence
+   *
+   * SECURITY: Uses platform-specific secure storage (Keychain/Keystore)
+   * to encrypt JWT tokens and prevent unauthorized access
    */
   static async storeSession(session: any): Promise<void> {
     try {
@@ -86,14 +99,23 @@ export class AuthManager {
       };
 
       this.sessionCache = authSession;
-      await AsyncStorage.setItem(this.SESSION_KEY, JSON.stringify(authSession));
+
+      // Use SecureStore instead of AsyncStorage for JWT tokens
+      await SecureStore.setItemAsync(
+        this.SESSION_KEY,
+        JSON.stringify(authSession)
+      );
+
+      console.log('🔒 Session securely stored in device keychain');
     } catch (error) {
-      console.error('Failed to store session:', error);
+      console.error('❌ Failed to store session:', error);
     }
   }
 
   /**
-   * Get stored session from AsyncStorage
+   * Get stored session from SecureStore
+   *
+   * SECURITY: Retrieves securely stored JWT tokens from device keychain
    */
   static async getStoredSession(): Promise<AuthSession | null> {
     try {
@@ -102,28 +124,36 @@ export class AuthManager {
         return this.sessionCache;
       }
 
-      const stored = await AsyncStorage.getItem(this.SESSION_KEY);
+      // Retrieve from SecureStore instead of AsyncStorage
+      const stored = await SecureStore.getItemAsync(this.SESSION_KEY);
       if (stored) {
         const session = JSON.parse(stored) as AuthSession;
         this.sessionCache = session;
+        console.log('🔒 Session retrieved from secure storage');
         return session;
       }
       return null;
     } catch (error) {
-      console.error('Failed to get stored session:', error);
+      console.error('❌ Failed to get stored session:', error);
       return null;
     }
   }
 
   /**
-   * Clear stored session
+   * Clear stored session from SecureStore
+   *
+   * SECURITY: Removes JWT tokens from secure storage on logout
    */
   static async clearSession(): Promise<void> {
     try {
       this.sessionCache = null;
-      await AsyncStorage.removeItem(this.SESSION_KEY);
+
+      // Remove from SecureStore instead of AsyncStorage
+      await SecureStore.deleteItemAsync(this.SESSION_KEY);
+
+      console.log('🔒 Session removed from secure storage');
     } catch (error) {
-      console.error('Failed to clear session:', error);
+      console.error('❌ Failed to clear session:', error);
     }
   }
 

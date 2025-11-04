@@ -17,20 +17,27 @@ import { useIntroMessage } from '../../hooks/useIntroMessage';
 interface ProfileScreenProps {
   user?: any;
   onLogout?: () => void;
+  onNavigate?: (screen: string) => void;
+  isPremium?: boolean;
 }
 
-export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
+export function ProfileScreen({ user, onLogout, onNavigate, isPremium = false }: ProfileScreenProps) {
   const { introMessage, setIntroMessage, isLoading } = useIntroMessage();
   const [isEditing, setIsEditing] = useState(false);
   const [editedMessage, setEditedMessage] = useState(introMessage);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSaveIntro = async () => {
+    setIsSaving(true);
     try {
       await setIntroMessage(editedMessage);
       setIsEditing(false);
       Alert.alert('Success', 'Introduction message updated');
     } catch (error) {
       Alert.alert('Error', 'Failed to save introduction message');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -50,6 +57,32 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
             </View>
             <Text style={styles.userName}>{user?.user_metadata?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'Not logged in'}</Text>
+
+            {/* Upgrade Button */}
+            {!isPremium && onNavigate && (
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                onPress={() => onNavigate('paywall')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.upgradeIconContainer}>
+                  <Ionicons name="diamond" size={20} color="#FFFFFF" />
+                </View>
+                <View style={styles.upgradeTextContainer}>
+                  <Text style={styles.upgradeTitle}>Upgrade to Premium</Text>
+                  <Text style={styles.upgradeSubtitle}>Unlock all features</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#4A7A5C" />
+              </TouchableOpacity>
+            )}
+
+            {/* Premium Badge */}
+            {isPremium && (
+              <View style={styles.premiumBadge}>
+                <Ionicons name="diamond" size={16} color="#4A7A5C" />
+                <Text style={styles.premiumText}>Premium Member</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -83,6 +116,8 @@ export function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
                   <Button
                     title="Save"
                     onPress={handleSaveIntro}
+                    loading={isSaving}
+                    disabled={isSaving}
                     style={styles.saveButton}
                   />
                 </View>
@@ -200,6 +235,65 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 2,
+    borderColor: '#4A7A5C',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    width: '100%',
+    shadowColor: '#4A7A5C',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  upgradeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4A7A5C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  upgradeTextContainer: {
+    flex: 1,
+  },
+  upgradeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  upgradeSubtitle: {
+    fontSize: 13,
+    color: '#4A7A5C',
+    fontWeight: '500',
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#4A7A5C',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 16,
+  },
+  premiumText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4A7A5C',
+    marginLeft: 6,
   },
   introCard: {
     backgroundColor: '#FFFFFF',

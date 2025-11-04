@@ -95,14 +95,3 @@ export async function autoCropBusinessCard(imageUri: string): Promise<CropResult
     };
   }
 }
-
-/**
- * @deprecated This function has no implementation. Use normal image processing instead.
- * Enhance image for better OCR results
- */
-export async function enhanceForOCR(imageUri: string): Promise<string> {
-  // This function currently has no implementation
-  // Expo ImageManipulator doesn't support advanced filters
-  // Returns original image URI
-  return imageUri;
-}

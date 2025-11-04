@@ -10,16 +10,19 @@ import { ContactForm } from './components/business/ContactForm';
 import { ContactList } from './components/screens/ContactList';
 import { ProfileScreen } from './components/screens/ProfileScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
+import { PaywallScreen } from './components/screens/PaywallScreen';
 import { Contact, Group } from './types';
 import { ContactService } from './services/contactService';
 import { GroupService } from './services/groupService';
 import { SupabaseService } from './services/supabase';
 import { AuthManager } from './services/authManager';
-import { validateEnv } from './config/env';
+import { validateConfig } from './config/environment';
 import { AuthScreen } from './components/screens/AuthScreen';
 import { SplashScreen } from './components/screens/SplashScreen';
 import { ContactDetailModal } from './components/business/ContactDetailModal';
 import { useGroups } from './hooks/useGroups';
+import { subscriptionCheckService } from './services/subscriptionCheckService';
+import { scanLimitService } from './services/scanLimitService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -36,6 +39,8 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showContactDetail, setShowContactDetail] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isPremiumUser, setIsPremiumUser] = useState(false);
 
   // Initialize groups hook
   const {
@@ -46,15 +51,60 @@ export default function App() {
     recalculateContactCounts,
   } = useGroups(contacts);
 
+  // Check subscription status function (defined before useEffects that use it)
+  const checkSubscriptionStatus = React.useCallback(async (userId: string) => {
+    try {
+      const isPremium = await subscriptionCheckService.isPremiumUser(userId);
+      setIsPremiumUser(isPremium);
+
+      // Show paywall for free users on first login
+      if (!isPremium) {
+        setShowPaywall(true);
+      }
+
+      console.log('✅ Subscription checked - isPremium:', isPremium);
+    } catch (error) {
+      console.error('⚠️ Failed to check subscription:', error);
+      setIsPremiumUser(false);
+    }
+  }, []);
+
   // Initialize app and validate environment
   useEffect(() => {
     initializeApp();
+
+    // SECURITY FIX: Setup auth listener with proper cleanup to prevent memory leak
+    const unsubscribe = AuthManager.setupAuthListener((user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setCurrentUser(user);
+        console.log('✅ Auth state changed: User logged in');
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+        setContacts([]);
+        console.log('📤 Auth state changed: User logged out');
+      }
+    });
+
+    // Cleanup function to unsubscribe from auth listener
+    return () => {
+      console.log('🧹 Cleaning up auth listener');
+      unsubscribe();
+    };
   }, []);
+
+  // Check subscription status when user logs in
+  useEffect(() => {
+    if (currentUser?.id && isAuthenticated) {
+      checkSubscriptionStatus(currentUser.id);
+    }
+  }, [currentUser?.id, isAuthenticated, checkSubscriptionStatus]);
 
   const initializeApp = async () => {
     try {
       // Validate environment variables (optional for offline mode)
-      const { isValid, missingKeys } = validateEnv();
+      const { isValid, missingKeys } = validateConfig();
       if (!isValid) {
         console.warn('⚠️ Missing API keys:', missingKeys);
         console.warn('📱 Running in offline mode');
@@ -105,7 +155,59 @@ export default function App() {
     setScannedCardData(cardData);
   };
 
-  const handleNavigateToForm = (imageUri: string, processOCR: boolean, isBackImage: boolean = false) => {
+  const checkScanLimit = async (): Promise<boolean> => {
+    if (!currentUser?.id) {
+      console.log('⚠️ No user ID, allowing scan (offline mode)');
+      return true;
+    }
+
+    try {
+      const limitInfo = await scanLimitService.canUserScan(currentUser.id);
+
+      if (!limitInfo.canScan) {
+        Alert.alert(
+          'Daily Limit Reached',
+          `You've reached your daily scan limit of ${limitInfo.dailyLimit} scans. Upgrade to Premium for unlimited scans!`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Upgrade',
+              style: 'default',
+              onPress: () => setShowPaywall(true),
+            },
+          ]
+        );
+        return false;
+      }
+
+      console.log(`✅ Scan allowed - ${limitInfo.scansRemaining} scans remaining`);
+      return true;
+    } catch (error) {
+      console.error('⚠️ Error checking scan limit:', error);
+      // Allow scan on error (offline mode)
+      return true;
+    }
+  };
+
+  const handleNavigateToForm = async (imageUri: string, processOCR: boolean, isBackImage: boolean = false) => {
+    // Check scan limit before proceeding (only for front image, not back image)
+    if (!isBackImage) {
+      const canScan = await checkScanLimit();
+      if (!canScan) {
+        return; // Don't proceed if limit reached
+      }
+
+      // Increment scan count
+      if (currentUser?.id) {
+        try {
+          await scanLimitService.incrementScanCount(currentUser.id);
+          console.log('✅ Scan count incremented');
+        } catch (error) {
+          console.error('⚠️ Failed to increment scan count:', error);
+        }
+      }
+    }
+
     if (isBackImage) {
       // Capturing back image
       setPendingBackImageUri(imageUri);
@@ -349,18 +451,48 @@ export default function App() {
 
   // Profile Stack Navigator
   function ProfileStack() {
+    const ProfileStackNavigator = createStackNavigator();
+
     return (
-      <ProfileScreen
-        user={currentUser}
-        onLogout={async () => {
-          await SupabaseService.signOut();
-          setIsAuthenticated(false);
-          setCurrentUser(null);
-          setContacts([]);
+      <ProfileStackNavigator.Navigator
+        screenOptions={{
+          headerShown: false,
         }}
-      />
+      >
+        <ProfileStackNavigator.Screen name="ProfileMain">
+          {(props) => (
+            <ProfileScreen
+              {...props}
+              user={currentUser}
+              isPremium={false} // TODO: Connect to subscription state
+              onNavigate={(screen) => {
+                if (screen === 'paywall') {
+                  props.navigation.navigate('Paywall');
+                }
+              }}
+              onLogout={async () => {
+                await SupabaseService.signOut();
+                setIsAuthenticated(false);
+                setCurrentUser(null);
+                setContacts([]);
+              }}
+            />
+          )}
+        </ProfileStackNavigator.Screen>
+        <ProfileStackNavigator.Screen
+          name="Paywall"
+          component={PaywallScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Upgrade to Premium',
+            headerBackTitle: 'Back',
+            presentation: 'modal',
+          }}
+        />
+      </ProfileStackNavigator.Navigator>
     );
   }
+
 
   // Handle successful authentication
   const handleAuthSuccess = async (user: any) => {
@@ -370,6 +502,11 @@ export default function App() {
     // Initialize app after authentication
     await SupabaseService.initializeStorage();
     await loadContacts();
+
+    // Check subscription status and potentially show paywall
+    if (user?.id) {
+      await checkSubscriptionStatus(user.id);
+    }
   };
 
   // Show splash screen
@@ -491,6 +628,28 @@ export default function App() {
         onDelete={handleContactDelete}
         onEdit={handleContactEdit}
       />
+
+      {/* Paywall Modal */}
+      {showPaywall && !isPremiumUser && (
+        <View style={StyleSheet.absoluteFill}>
+          <PaywallScreen
+            onClose={() => setShowPaywall(false)}
+            onSuccess={() => {
+              setShowPaywall(false);
+              setIsPremiumUser(true);
+              // Refresh subscription status
+              if (currentUser?.id) {
+                checkSubscriptionStatus(currentUser.id);
+              }
+            }}
+            onSkip={() => {
+              console.log('✅ User skipped paywall');
+              setShowPaywall(false);
+            }}
+            showSkipButton={true}
+          />
+        </View>
+      )}
     </NavigationContainer>
   );
 }

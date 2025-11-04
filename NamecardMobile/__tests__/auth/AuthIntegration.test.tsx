@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert } from '../testUtils';
 import App from '../../App';
 import { AuthScreen } from '../../components/screens/AuthScreen';
 import { SupabaseService } from '../../services/supabase';
@@ -8,14 +8,15 @@ import { mockAuthResponses, mockSupabaseService } from '../../__mocks__/supabase
 
 // Mock dependencies
 jest.mock('../../services/supabase');
-jest.mock('../../services/googleVision');
-jest.mock('../../config/env', () => ({
-  ENV: {
+jest.mock('../../config/environment', () => ({
+  default: {
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_ANON_KEY: 'test-key',
     GOOGLE_VISION_API_KEY: 'test-vision-key',
+    GEMINI_API_KEY: 'test-gemini-key',
+    OPENAI_API_KEY: 'test-openai-key',
   },
-  validateEnv: () => ({ isValid: true, missingKeys: [] }),
+  validateConfig: () => ({ isValid: true, missingKeys: [] }),
 }));
 
 describe('Authentication Integration Tests', () => {
@@ -342,17 +343,10 @@ describe('Authentication Integration Tests', () => {
     });
 
     it('should clear sensitive data after successful authentication', async () => {
-      let authScreenRef: any;
-      const mockOnAuthSuccess = jest.fn((user) => {
-        // Simulate clearing sensitive data
-        authScreenRef = null;
-      });
+      const mockOnAuthSuccess = jest.fn();
 
       const { getByText, getByPlaceholderText } = render(
-        <AuthScreen
-          ref={(ref) => authScreenRef = ref}
-          onAuthSuccess={mockOnAuthSuccess}
-        />
+        <AuthScreen onAuthSuccess={mockOnAuthSuccess} />
       );
 
       fireEvent.changeText(getByPlaceholderText('Email'), 'user@example.com');
@@ -365,8 +359,11 @@ describe('Authentication Integration Tests', () => {
 
       await waitFor(() => {
         expect(mockOnAuthSuccess).toHaveBeenCalledWith(mockAuthResponses.signInSuccess.user);
-        expect(authScreenRef).toBeNull();
       });
+
+      // Verify sensitive data is not accessible after auth
+      const passwordInput = getByPlaceholderText('Password');
+      expect(passwordInput.props.value).toBeFalsy();
     });
   });
 });

@@ -1,29 +1,26 @@
 import React from 'react';
-import { render, fireEvent, screen } from '../test-utils';
-import { Alert } from 'react-native';
+import { render, fireEvent, screen } from '../testUtils';
+import { View, Text, TouchableOpacity } from 'react-native';
 
-// Simple ContactCard component for testing
+// Simple ContactCard component for testing (React Native)
 const ContactCard = ({ contact, onPress, onLongPress }: any) => {
   return (
-    <div
-      data-testid="contact-card"
-      onClick={() => onPress(contact)}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onLongPress(contact);
-      }}
+    <TouchableOpacity
+      testID="contact-card"
+      onPress={() => onPress?.(contact)}
+      onLongPress={() => onLongPress?.(contact)}
     >
-      <div data-testid="contact-name">{contact.name}</div>
+      <Text testID="contact-name">{contact.name}</Text>
       {contact.company && (
-        <div data-testid="contact-company">{contact.company}</div>
+        <Text testID="contact-company">{contact.company}</Text>
       )}
       {contact.email && (
-        <div data-testid="contact-email">{contact.email}</div>
+        <Text testID="contact-email">{contact.email}</Text>
       )}
       {contact.phone && (
-        <div data-testid="contact-phone">{contact.phone}</div>
+        <Text testID="contact-phone">{contact.phone}</Text>
       )}
-    </div>
+    </TouchableOpacity>
   );
 };
 
@@ -77,12 +74,12 @@ describe('ContactCard Component', () => {
     );
 
     expect(screen.getByTestId('contact-name')).toHaveTextContent('Jane Smith');
-    expect(screen.queryByTestId('contact-company')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('contact-email')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('contact-phone')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('contact-company')).toBeFalsy();
+    expect(screen.queryByTestId('contact-email')).toBeFalsy();
+    expect(screen.queryByTestId('contact-phone')).toBeFalsy();
   });
 
-  it('should call onPress when clicked', () => {
+  it('should call onPress when pressed', () => {
     render(
       <ContactCard
         contact={mockContact}
@@ -92,7 +89,7 @@ describe('ContactCard Component', () => {
     );
 
     const card = screen.getByTestId('contact-card');
-    fireEvent.click(card);
+    fireEvent.press(card);
 
     expect(mockOnPress).toHaveBeenCalledTimes(1);
     expect(mockOnPress).toHaveBeenCalledWith(mockContact);
@@ -109,7 +106,7 @@ describe('ContactCard Component', () => {
     );
 
     const card = screen.getByTestId('contact-card');
-    fireEvent.contextMenu(card);
+    fireEvent(card, 'onLongPress');
 
     expect(mockOnLongPress).toHaveBeenCalledTimes(1);
     expect(mockOnLongPress).toHaveBeenCalledWith(mockContact);
@@ -122,21 +119,22 @@ describe('ContactCard Component', () => {
     const card = screen.getByTestId('contact-card');
 
     // Should not throw errors when callbacks are missing
-    expect(() => fireEvent.click(card)).not.toThrow();
-    expect(() => fireEvent.contextMenu(card)).not.toThrow();
+    expect(() => fireEvent.press(card)).not.toThrow();
+    expect(() => fireEvent(card, 'onLongPress')).not.toThrow();
   });
 
   it('should apply correct accessibility properties', () => {
     const ContactCardWithAccessibility = ({ contact, onPress }: any) => {
       return (
-        <div
-          data-testid="contact-card"
-          role="button"
-          aria-label={`Contact: ${contact.name}`}
-          onClick={() => onPress?.(contact)}
+        <TouchableOpacity
+          testID="contact-card"
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Contact: ${contact.name}`}
+          onPress={() => onPress?.(contact)}
         >
-          <div>{contact.name}</div>
-        </div>
+          <Text>{contact.name}</Text>
+        </TouchableOpacity>
       );
     };
 
@@ -148,60 +146,78 @@ describe('ContactCard Component', () => {
     );
 
     const card = screen.getByTestId('contact-card');
-    expect(card).toHaveAttribute('role', 'button');
-    expect(card).toHaveAttribute('aria-label', 'Contact: John Doe');
+    expect(card.props.accessible).toBe(true);
+    expect(card.props.accessibilityRole).toBe('button');
+    expect(card.props.accessibilityLabel).toBe('Contact: John Doe');
   });
 
   it('should display formatted phone number', () => {
     const formatPhoneNumber = (phone: string) => {
       // Simple US phone number formatting
       const cleaned = phone.replace(/\D/g, '');
-      const match = cleaned.match(/^(\d{1})(\d{3})(\d{3})(\d{4})$/);
-      if (match) {
-        return `+${match[1]} (${match[2]}) ${match[3]}-${match[4]}`;
+
+      // Check if it starts with country code 1 (US/Canada)
+      if (cleaned.startsWith('1') && cleaned.length === 11) {
+        // Format: +1 (234) 567-8900
+        const match = cleaned.match(/^1(\d{3})(\d{3})(\d{4})$/);
+        if (match) {
+          return `+1 (${match[1]}) ${match[2]}-${match[3]}`;
+        }
+      } else if (cleaned.length === 10) {
+        // Format: (234) 567-8900 for 10-digit numbers
+        const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+        if (match) {
+          return `(${match[1]}) ${match[2]}-${match[3]}`;
+        }
       }
+
       return phone;
     };
 
     const ContactCardWithFormatting = ({ contact }: any) => {
       return (
-        <div data-testid="contact-card">
-          <div data-testid="formatted-phone">
+        <View testID="contact-card">
+          <Text testID="formatted-phone">
             {contact.phone && formatPhoneNumber(contact.phone)}
-          </div>
-        </div>
+          </Text>
+        </View>
       );
     };
 
     render(<ContactCardWithFormatting contact={mockContact} />);
 
+    // mockContact.phone is '+1234567890' which has 11 digits after removing non-digits
     expect(screen.getByTestId('formatted-phone')).toHaveTextContent(
-      '+1 (234) 567-890'
+      '+1 (234) 567-8900'
     );
   });
 
   it('should highlight search matches', () => {
     const ContactCardWithHighlight = ({ contact, searchQuery }: any) => {
       const highlightText = (text: string, query: string) => {
-        if (!query) return text;
+        if (!query) return <Text>{text}</Text>;
         const parts = text.split(new RegExp(`(${query})`, 'gi'));
-        return parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase() ? (
-            <span key={i} data-testid="highlighted-text">
-              {part}
-            </span>
-          ) : (
-            part
-          )
+        return (
+          <>
+            {parts.map((part, i) =>
+              part.toLowerCase() === query.toLowerCase() ? (
+                <Text key={i} testID="highlighted-text">
+                  {part}
+                </Text>
+              ) : (
+                <Text key={i}>{part}</Text>
+              )
+            )}
+          </>
         );
       };
 
       return (
-        <div data-testid="contact-card">
-          <div data-testid="contact-name">
+        <View testID="contact-card">
+          <View testID="contact-name">
             {highlightText(contact.name, searchQuery)}
-          </div>
-        </div>
+          </View>
+        </View>
       );
     };
 

@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { ENV } from '../config/env';
+import Config from '../config/environment';
 
 let supabaseClient: SupabaseClient | null = null;
 
@@ -8,13 +8,13 @@ let supabaseClient: SupabaseClient | null = null;
  */
 export function getSupabaseClient(): SupabaseClient {
   if (!supabaseClient) {
-    if (!ENV.SUPABASE_URL || !ENV.SUPABASE_ANON_KEY) {
+    if (!Config.SUPABASE_URL || !Config.SUPABASE_ANON_KEY) {
       throw new Error('Missing Supabase configuration');
     }
 
     supabaseClient = createClient(
-      ENV.SUPABASE_URL,
-      ENV.SUPABASE_ANON_KEY,
+      Config.SUPABASE_URL,
+      Config.SUPABASE_ANON_KEY,
       {
         auth: {
           persistSession: true,

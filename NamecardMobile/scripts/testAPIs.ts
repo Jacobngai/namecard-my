@@ -8,7 +8,7 @@
 import { GeminiOCRService } from '../services/geminiOCR';
 import { SupabaseService } from '../services/supabase';
 import { OpenAIService } from '../services/openai';
-import { ENV, validateEnv } from '../config/env';
+import Config, { validateConfig } from '../config/environment';
 
 interface TestResult {
   name: string;
@@ -71,7 +71,7 @@ class APITester {
   }
 
   private async testEnvironment(): Promise<void> {
-    const { isValid, missingKeys } = validateEnv();
+    const { isValid, missingKeys } = validateConfig();
     
     if (!isValid) {
       throw new Error(`Missing API keys: ${missingKeys.join(', ')}`);
@@ -79,10 +79,10 @@ class APITester {
 
     // Log configuration status (without revealing keys)
     console.log('📋 Environment Configuration:');
-    console.log(`   Gemini API: ${ENV.GEMINI_API_KEY ? '✓' : '✗'}`);
-    console.log(`   Supabase URL: ${ENV.SUPABASE_URL ? '✓' : '✗'}`);
-    console.log(`   Supabase Key: ${ENV.SUPABASE_ANON_KEY ? '✓' : '✗'}`);
-    console.log(`   OpenAI API: ${ENV.OPENAI_API_KEY ? '✓' : '✗'}`);
+    console.log(`   Gemini API: ${Config.GEMINI_API_KEY ? '✓' : '✗'}`);
+    console.log(`   Supabase URL: ${Config.SUPABASE_URL ? '✓' : '✗'}`);
+    console.log(`   Supabase Key: ${Config.SUPABASE_ANON_KEY ? '✓' : '✗'}`);
+    console.log(`   OpenAI API: ${Config.OPENAI_API_KEY ? '✓' : '✗'}`);
   }
 
   private async testGeminiApiKey(): Promise<void> {
@@ -105,7 +105,7 @@ class APITester {
     }
 
     console.log('   ✓ Database connection established');
-    console.log(`   ✓ Connected to: ${ENV.SUPABASE_URL}`);
+    console.log(`   ✓ Connected to: ${Config.SUPABASE_URL}`);
   }
 
   private async testSupabaseStorage(): Promise<void> {

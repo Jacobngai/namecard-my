@@ -1,0 +1,606 @@
+<!--
+WhatsCard Email Templates - Branded for WhatsCard
+Use these templates in Supabase Dashboard > Auth > Email Templates
+https://supabase.com/dashboard/project/wvahortlayplumgrcmvi/auth/templates
+-->
+
+<!-- ============================================ -->
+<!-- 1. CONFIRM SIGNUP TEMPLATE -->
+<!-- ============================================ -->
+<!-- Subject: Confirm Your WhatsCard Account -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #374151;
+      background-color: #F9FAFB;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #FFFFFF;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #4A7A5C 0%, #3B6B4E 50%, #2D5A40 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 20px 0;
+    }
+    .text {
+      font-size: 16px;
+      color: #6B7280;
+      margin: 0 0 30px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4A7A5C;
+      color: #FFFFFF !important;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(74, 122, 92, 0.2);
+    }
+    .button:hover {
+      background-color: #3B6B4E;
+    }
+    .otp-box {
+      background-color: #F3F4F6;
+      border: 2px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 30px 0;
+    }
+    .otp-code {
+      font-size: 32px;
+      font-weight: 700;
+      color: #4A7A5C;
+      letter-spacing: 4px;
+      margin: 0;
+    }
+    .footer {
+      background-color: #F9FAFB;
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+    .footer a {
+      color: #4A7A5C;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">WhatsCard</h1>
+    </div>
+    <div class="content">
+      <h2 class="title">Confirm Your Email</h2>
+      <p class="text">
+        Welcome to WhatsCard! We're excited to have you on board.
+        Click the button below to confirm your email address and start networking smarter.
+      </p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Address</a>
+      </div>
+      <div class="otp-box">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #6B7280;">Or enter this code:</p>
+        <p class="otp-code">{{ .Token }}</p>
+      </div>
+      <p class="text" style="font-size: 14px;">
+        If you didn't create a WhatsCard account, you can safely ignore this email.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2025 WhatsCard. All rights reserved.</p>
+      <p>Smart networking made simple with WhatsApp integration.</p>
+    </div>
+  </div>
+</body>
+</html>
+
+
+<!-- ============================================ -->
+<!-- 2. RESET PASSWORD TEMPLATE -->
+<!-- ============================================ -->
+<!-- Subject: Reset Your WhatsCard Password -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #374151;
+      background-color: #F9FAFB;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #FFFFFF;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #4A7A5C 0%, #3B6B4E 50%, #2D5A40 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 20px 0;
+    }
+    .text {
+      font-size: 16px;
+      color: #6B7280;
+      margin: 0 0 30px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4A7A5C;
+      color: #FFFFFF !important;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(74, 122, 92, 0.2);
+    }
+    .otp-box {
+      background-color: #F3F4F6;
+      border: 2px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 30px 0;
+    }
+    .otp-code {
+      font-size: 32px;
+      font-weight: 700;
+      color: #4A7A5C;
+      letter-spacing: 4px;
+      margin: 0;
+    }
+    .warning {
+      background-color: #FEF3C7;
+      border-left: 4px solid #F59E0B;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .footer {
+      background-color: #F9FAFB;
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">WhatsCard</h1>
+    </div>
+    <div class="content">
+      <h2 class="title">Reset Your Password</h2>
+      <p class="text">
+        We received a request to reset the password for your WhatsCard account: <strong>{{ .Email }}</strong>
+      </p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ .ConfirmationURL }}" class="button">Reset Password</a>
+      </div>
+      <div class="otp-box">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #6B7280;">Or enter this code:</p>
+        <p class="otp-code">{{ .Token }}</p>
+      </div>
+      <div class="warning">
+        <p style="margin: 0; font-size: 14px; color: #92400E;">
+          <strong>⚠️ Security Note:</strong> If you didn't request this password reset, please ignore this email and your password will remain unchanged.
+        </p>
+      </div>
+      <p class="text" style="font-size: 14px;">
+        This link will expire in 24 hours for security reasons.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2025 WhatsCard. All rights reserved.</p>
+      <p>Need help? Contact us at support@whatscard.com</p>
+    </div>
+  </div>
+</body>
+</html>
+
+
+<!-- ============================================ -->
+<!-- 3. MAGIC LINK TEMPLATE -->
+<!-- ============================================ -->
+<!-- Subject: Your WhatsCard Login Link -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #374151;
+      background-color: #F9FAFB;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #FFFFFF;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #4A7A5C 0%, #3B6B4E 50%, #2D5A40 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 20px 0;
+    }
+    .text {
+      font-size: 16px;
+      color: #6B7280;
+      margin: 0 0 30px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4A7A5C;
+      color: #FFFFFF !important;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(74, 122, 92, 0.2);
+    }
+    .otp-box {
+      background-color: #F3F4F6;
+      border: 2px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin: 30px 0;
+    }
+    .otp-code {
+      font-size: 32px;
+      font-weight: 700;
+      color: #4A7A5C;
+      letter-spacing: 4px;
+      margin: 0;
+    }
+    .footer {
+      background-color: #F9FAFB;
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">WhatsCard</h1>
+    </div>
+    <div class="content">
+      <h2 class="title">Your Magic Login Link</h2>
+      <p class="text">
+        Click the button below to instantly log in to WhatsCard. No password needed!
+      </p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ .ConfirmationURL }}" class="button">Log In to WhatsCard</a>
+      </div>
+      <div class="otp-box">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #6B7280;">Or enter this code:</p>
+        <p class="otp-code">{{ .Token }}</p>
+      </div>
+      <p class="text" style="font-size: 14px;">
+        This link expires in 60 minutes. If you didn't request this, please ignore this email.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2025 WhatsCard. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+
+
+<!-- ============================================ -->
+<!-- 4. INVITE USER TEMPLATE -->
+<!-- ============================================ -->
+<!-- Subject: You're Invited to WhatsCard -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #374151;
+      background-color: #F9FAFB;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #FFFFFF;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #4A7A5C 0%, #3B6B4E 50%, #2D5A40 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 20px 0;
+    }
+    .text {
+      font-size: 16px;
+      color: #6B7280;
+      margin: 0 0 30px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4A7A5C;
+      color: #FFFFFF !important;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(74, 122, 92, 0.2);
+    }
+    .feature-list {
+      background-color: #F0FDF4;
+      border-left: 4px solid #4A7A5C;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .feature-list ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .feature-list li {
+      color: #374151;
+      margin: 8px 0;
+    }
+    .footer {
+      background-color: #F9FAFB;
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">WhatsCard</h1>
+    </div>
+    <div class="content">
+      <h2 class="title">You're Invited!</h2>
+      <p class="text">
+        You've been invited to join WhatsCard - the smart way to manage business cards and network with WhatsApp integration.
+      </p>
+      <div class="feature-list">
+        <strong>What you'll get:</strong>
+        <ul>
+          <li>📸 Instant business card scanning with OCR</li>
+          <li>💬 One-click WhatsApp messaging to contacts</li>
+          <li>📊 Smart contact management and search</li>
+          <li>📤 Export contacts to Excel</li>
+        </ul>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ .ConfirmationURL }}" class="button">Accept Invitation</a>
+      </div>
+      <p class="text" style="font-size: 14px;">
+        This invitation link is unique to you. Don't share it with others.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2025 WhatsCard. All rights reserved.</p>
+      <p>Smart networking made simple.</p>
+    </div>
+  </div>
+</body>
+</html>
+
+
+<!-- ============================================ -->
+<!-- 5. EMAIL CHANGE TEMPLATE -->
+<!-- ============================================ -->
+<!-- Subject: Confirm Your New Email Address -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #374151;
+      background-color: #F9FAFB;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #FFFFFF;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #4A7A5C 0%, #3B6B4E 50%, #2D5A40 100%);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 20px 0;
+    }
+    .text {
+      font-size: 16px;
+      color: #6B7280;
+      margin: 0 0 30px 0;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4A7A5C;
+      color: #FFFFFF !important;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(74, 122, 92, 0.2);
+    }
+    .email-change-box {
+      background-color: #F3F4F6;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .footer {
+      background-color: #F9FAFB;
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="logo">WhatsCard</h1>
+    </div>
+    <div class="content">
+      <h2 class="title">Confirm Email Change</h2>
+      <p class="text">
+        We received a request to change your WhatsCard email address.
+      </p>
+      <div class="email-change-box">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #6B7280;">From:</p>
+        <p style="margin: 0 0 20px 0; font-size: 16px; font-weight: 600; color: #374151;">{{ .Email }}</p>
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #6B7280;">To:</p>
+        <p style="margin: 0; font-size: 16px; font-weight: 600; color: #4A7A5C;">{{ .NewEmail }}</p>
+      </div>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Change</a>
+      </div>
+      <p class="text" style="font-size: 14px;">
+        If you didn't request this change, please ignore this email and your email address will remain unchanged.
+      </p>
+    </div>
+    <div class="footer">
+      <p>© 2025 WhatsCard. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

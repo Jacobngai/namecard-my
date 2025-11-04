@@ -3,6 +3,9 @@ import { render as rtlRender, RenderOptions } from '@testing-library/react-nativ
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+// Export global Alert mock for tests
+export const Alert = (global as any).Alert;
+
 // Create a custom render function that includes providers
 function render(
   ui: ReactElement,

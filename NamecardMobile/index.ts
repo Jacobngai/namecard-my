@@ -1,5 +1,7 @@
-import { registerRootComponent } from 'expo';
+// CRITICAL: Must be imported first for UUID generation on React Native
+import 'react-native-get-random-values';
 
+import { registerRootComponent } from 'expo';
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.whatscard.app",
+      "bundleIdentifier": "com.alittlebetter.alittlebetter",
       "icon": "./assets/splash-icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to scan business cards.",

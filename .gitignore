@@ -1,1 +1,79 @@
+# Claude Code Configuration
 .claude.json
+
+# Environment Variables - CRITICAL: Never commit API keys!
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+NamecardMobile/.env
+NamecardMobile/.env.local
+NamecardMobile/.env.*.local
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.cer
+*.keystore
+ios/Pods/
+android/.gradle/
+android/build/
+android/app/build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+NUL
+*.backup
+*.old
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Build artifacts
+build/
+*.apk
+*.aab
+*.ipa
+
+# Secrets and keys (CRITICAL)
+secrets/
+*.pem
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+
+# Supabase
+.mcp.json
+
+# Jest
+jest-results.json

@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import { Contact, Group } from '../types';
 import { AuthManager } from './authManager';
 import { getSupabaseClient } from './supabaseClient';
-import { ENV } from '../config/env';
+import Config from '../config/environment';
 
 // Database types based on our new schema
 interface DatabaseContact {
@@ -218,16 +218,25 @@ export class SupabaseService {
 
   /**
    * Search contacts
+   *
+   * SECURITY FIX: Sanitize query to prevent SQL injection via special characters
    */
   static async searchContacts(query: string): Promise<Contact[]> {
     return AuthManager.withVerifiedSession(async (userId) => {
       const client = this.getClient();
 
+      // SECURITY: Escape special characters that could be used for SQL injection
+      // PostgreSQL LIKE/ILIKE uses % and _ as wildcards that need escaping
+      const sanitizedQuery = query
+        .replace(/\\/g, '\\\\')  // Escape backslashes first
+        .replace(/%/g, '\\%')    // Escape % wildcard
+        .replace(/_/g, '\\_');   // Escape _ wildcard
+
       const { data, error } = await client
         .from('contacts')
         .select('*')
         .eq('user_id', userId)  // Only search user's own contacts
-        .or(`name.ilike.%${query}%,company.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%`)
+        .or(`name.ilike.%${sanitizedQuery}%,company.ilike.%${sanitizedQuery}%,phone.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%`)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -364,7 +373,7 @@ export class SupabaseService {
         password,
         options: {
           data: metadata,
-          emailRedirectTo: `${ENV.SUPABASE_URL}/auth/v1/verify`
+          emailRedirectTo: 'whatscard://auth-confirm'
         }
       });
 
@@ -440,7 +449,7 @@ export class SupabaseService {
     try {
       const client = this.getClient();
       const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://namecard.my/reset-password',
+        redirectTo: 'whatscard://reset-password',
       });
       return { error };
     } catch (error) {
@@ -459,7 +468,7 @@ export class SupabaseService {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${ENV.SUPABASE_URL}/auth/v1/verify`
+          emailRedirectTo: 'whatscard://auth-confirm'
         }
       });
       return { error };

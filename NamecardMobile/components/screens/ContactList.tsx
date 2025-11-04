@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -52,6 +53,7 @@ export function ContactList({
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string | null>(null);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [isUpdatingContact, setIsUpdatingContact] = useState<string | null>(null);
 
   // Reload intro message when screen gains focus (fixes stale message bug)
   useFocusEffect(
@@ -118,6 +120,7 @@ export function ContactList({
   };
 
   const handleWhatsApp = async (contact: Contact) => {
+    setIsUpdatingContact(contact.id);
     try {
       const cleanPhone = contact.phone.replace(/[^+\d]/g, '');
       const introMessage = getFormattedMessage(contact.name);
@@ -144,6 +147,8 @@ export function ContactList({
     } catch (error) {
       console.error('❌ WhatsApp integration failed:', error);
       Alert.alert('Error', 'Failed to open WhatsApp');
+    } finally {
+      setIsUpdatingContact(null);
     }
   };
 
@@ -382,8 +387,16 @@ export function ContactList({
         <TouchableOpacity
           style={styles.whatsappButton}
           onPress={() => handleWhatsApp(contact)}
+          disabled={isUpdatingContact === contact.id}
+          accessibilityLabel="Open in WhatsApp"
+          accessibilityHint="Opens WhatsApp conversation with this contact"
+          accessibilityRole="button"
         >
-          <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
+          {isUpdatingContact === contact.id ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
+          )}
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -880,7 +893,7 @@ const styles = StyleSheet.create({
   },
   contactPhone2: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#6B7280',
     fontStyle: 'italic',
   },
   whatsappButton: {

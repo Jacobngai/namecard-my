@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,15 @@ import {
   Linking,
   Alert,
   Dimensions,
+  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Contact } from '../../types';
 import { ContactService } from '../../services/contactService';
 import { useIntroMessage } from '../../hooks/useIntroMessage';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 interface ContactDetailModalProps {
   contact: Contact | null;
@@ -34,47 +36,64 @@ export function ContactDetailModal({
   onEdit,
 }: ContactDetailModalProps) {
   const { getFormattedMessage } = useIntroMessage();
+  const [showFullscreenImage, setShowFullscreenImage] = useState(false);
+  const [isLoading, setIsLoading] = useState({ phone: false, email: false, whatsapp: false });
 
   if (!contact) return null;
 
   const handleCall = async (phoneNumber: string) => {
-    const url = `tel:${phoneNumber}`;
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    } else {
-      Alert.alert('Error', 'Unable to make phone call');
+    setIsLoading(prev => ({ ...prev, phone: true }));
+    try {
+      const url = `tel:${phoneNumber}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to make phone call');
+      }
+    } finally {
+      setIsLoading(prev => ({ ...prev, phone: false }));
     }
   };
 
   const handleEmail = async () => {
     if (!contact.email) return;
-    const url = `mailto:${contact.email}`;
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    } else {
-      Alert.alert('Error', 'Unable to open email client');
+    setIsLoading(prev => ({ ...prev, email: true }));
+    try {
+      const url = `mailto:${contact.email}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to open email client');
+      }
+    } finally {
+      setIsLoading(prev => ({ ...prev, email: false }));
     }
   };
 
   const handleWhatsApp = async (phoneNumber: string) => {
-    const cleanPhone = phoneNumber.replace(/[^+\d]/g, '');
-    const message = getFormattedMessage(contact.name);
-    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-      // Update last contact timestamp
-      try {
-        await ContactService.updateContact(contact.id, {
-          lastContact: new Date().toISOString()
-        });
-      } catch (error) {
-        console.warn('Failed to update last contact:', error);
+    setIsLoading(prev => ({ ...prev, whatsapp: true }));
+    try {
+      const cleanPhone = phoneNumber.replace(/[^+\d]/g, '');
+      const message = getFormattedMessage(contact.name);
+      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        // Update last contact timestamp
+        try {
+          await ContactService.updateContact(contact.id, {
+            lastContact: new Date().toISOString()
+          });
+        } catch (error) {
+          console.warn('Failed to update last contact:', error);
+        }
+      } else {
+        Alert.alert('Error', 'WhatsApp is not installed');
       }
-    } else {
-      Alert.alert('Error', 'WhatsApp is not installed');
+    } finally {
+      setIsLoading(prev => ({ ...prev, whatsapp: false }));
     }
   };
 
@@ -134,13 +153,21 @@ export function ContactDetailModal({
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Business Card Image */}
           {contact.imageUrl && (
-            <View style={styles.imageContainer}>
+            <TouchableOpacity
+              style={styles.imageContainer}
+              onPress={() => setShowFullscreenImage(true)}
+              activeOpacity={0.9}
+            >
               <Image
                 source={{ uri: contact.imageUrl }}
                 style={styles.cardImage}
                 resizeMode="contain"
               />
-            </View>
+              <View style={styles.imageOverlay}>
+                <Ionicons name="expand-outline" size={24} color="#FFFFFF" />
+                <Text style={styles.imageHintText}>Tap to view fullscreen</Text>
+              </View>
+            </TouchableOpacity>
           )}
 
           {/* Contact Info */}
@@ -163,14 +190,25 @@ export function ContactDetailModal({
               <TouchableOpacity
                 style={styles.infoRow}
                 onPress={() => handleCall(contact.phone)}
+                accessibilityLabel={`Call ${contact.phone}`}
+                accessibilityHint="Opens phone dialer to call this number"
+                accessibilityRole="button"
               >
                 <Ionicons name="call-outline" size={20} color="#6B7280" />
                 <Text style={styles.infoText}>{contact.phone}</Text>
                 <TouchableOpacity
                   onPress={() => handleWhatsApp(contact.phone)}
                   style={styles.actionButton}
+                  disabled={isLoading.whatsapp}
+                  accessibilityLabel={`Message ${contact.name} on WhatsApp`}
+                  accessibilityHint="Opens WhatsApp to message this contact"
+                  accessibilityRole="button"
                 >
-                  <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  {isLoading.whatsapp ? (
+                    <ActivityIndicator size="small" color="#25D366" />
+                  ) : (
+                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  )}
                 </TouchableOpacity>
               </TouchableOpacity>
             )}
@@ -189,8 +227,13 @@ export function ContactDetailModal({
                 <TouchableOpacity
                   onPress={() => contact.phones?.mobile1 && handleWhatsApp(contact.phones.mobile1)}
                   style={styles.actionButton}
+                  disabled={isLoading.whatsapp}
                 >
-                  <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  {isLoading.whatsapp ? (
+                    <ActivityIndicator size="small" color="#25D366" />
+                  ) : (
+                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  )}
                 </TouchableOpacity>
               </TouchableOpacity>
             )}
@@ -209,8 +252,13 @@ export function ContactDetailModal({
                 <TouchableOpacity
                   onPress={() => contact.phones?.mobile2 && handleWhatsApp(contact.phones.mobile2)}
                   style={styles.actionButton}
+                  disabled={isLoading.whatsapp}
                 >
-                  <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  {isLoading.whatsapp ? (
+                    <ActivityIndicator size="small" color="#25D366" />
+                  ) : (
+                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  )}
                 </TouchableOpacity>
               </TouchableOpacity>
             )}
@@ -287,6 +335,35 @@ export function ContactDetailModal({
           </View>
         </ScrollView>
       </View>
+
+      {/* Fullscreen Image Modal */}
+      <Modal
+        visible={showFullscreenImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFullscreenImage(false)}
+      >
+        <StatusBar hidden />
+        <View style={styles.fullscreenImageContainer}>
+          <TouchableOpacity
+            style={styles.fullscreenClose}
+            onPress={() => setShowFullscreenImage(false)}
+          >
+            <Ionicons name="close-circle" size={40} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fullscreenImageTouchable}
+            activeOpacity={0.9}
+            onPress={() => setShowFullscreenImage(false)}
+          >
+            <Image
+              source={{ uri: contact.imageUrl || '' }}
+              style={styles.fullscreenImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -337,11 +414,53 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    position: 'relative',
   },
   cardImage: {
     width: width - 32,
-    maxHeight: 300, // Maximum height for the image
-    resizeMode: 'contain' as const, // Ensure image fits within bounds
+    height: 200,
+    resizeMode: 'contain' as const,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageHintText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  fullscreenClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  fullscreenImageContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImageTouchable: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: width,
+    height: height,
   },
   infoSection: {
     alignItems: 'center',

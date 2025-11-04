@@ -1,6 +1,6 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
-import { ENV } from '../config/env';
+import Config from '../config/environment';
 
 // Type for recording
 type Recording = Audio.Recording;
@@ -95,7 +95,7 @@ export class OpenAIService {
    */
   static async transcribeAudio(audioUri: string): Promise<string> {
     try {
-      if (!ENV.OPENAI_API_KEY) {
+      if (!Config.OPENAI_API_KEY) {
         throw new Error('OpenAI API key not configured');
       }
 
@@ -113,7 +113,7 @@ export class OpenAIService {
       const response = await fetch(this.WHISPER_API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${ENV.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${Config.OPENAI_API_KEY}`,
         },
         body: formData,
       });
@@ -140,7 +140,7 @@ export class OpenAIService {
     tags?: string[];
   }> {
     try {
-      if (!ENV.OPENAI_API_KEY) {
+      if (!Config.OPENAI_API_KEY) {
         throw new Error('OpenAI API key not configured');
       }
 
@@ -163,7 +163,7 @@ Only include tags that are clearly relevant to business networking.
       const response = await fetch(this.CHAT_API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${ENV.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${Config.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -287,12 +287,12 @@ Only include tags that are clearly relevant to business networking.
    */
   static async testConnection(): Promise<boolean> {
     try {
-      if (!ENV.OPENAI_API_KEY) return false;
+      if (!Config.OPENAI_API_KEY) return false;
 
       const response = await fetch(this.CHAT_API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${ENV.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${Config.OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

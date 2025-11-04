@@ -2,6 +2,7 @@ import { Contact } from '../types';
 import { LocalStorage } from './localStorage';
 import { SupabaseService } from './supabase';
 import { AuthManager } from './authManager';
+import { validateContact } from '../utils/validation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 
@@ -12,6 +13,7 @@ import * as FileSystem from 'expo-file-system';
 export class ContactService {
   private static isOnline = true;
   private static hasAuth = false;
+  private static isSyncing = false; // Mutex lock to prevent concurrent syncs
 
   /**
    * Initialize the contact service
@@ -62,6 +64,14 @@ export class ContactService {
    * Create a new contact (offline-first)
    */
   static async createContact(contactData: Partial<Contact>): Promise<Contact> {
+    // Step 0: Validate input data
+    try {
+      await validateContact(contactData);
+    } catch (error) {
+      console.error('❌ Contact validation failed:', error);
+      throw error;
+    }
+
     // Step 1: Save front image locally if provided
     let localImageUrl = contactData.imageUrl;
     if (localImageUrl && !localImageUrl.startsWith('file://')) {
@@ -116,6 +126,16 @@ export class ContactService {
    * Update a contact (offline-first)
    */
   static async updateContact(id: string, updates: Partial<Contact>): Promise<Contact> {
+    // Validate update data if it contains key fields
+    if (updates.name || updates.email || updates.phone) {
+      try {
+        await validateContact({ ...updates, name: updates.name || 'temp' });
+      } catch (error) {
+        console.error('❌ Contact update validation failed:', error);
+        throw error;
+      }
+    }
+
     // Save updated front image if provided and not already local
     if (updates.imageUrl && !updates.imageUrl.startsWith('file://')) {
       try {
@@ -211,12 +231,24 @@ export class ContactService {
 
   /**
    * Process sync queue in background
+   *
+   * SECURITY FIX: Added mutex lock to prevent race conditions
+   * and properly increment retry counters to avoid infinite retries
    */
   private static async processSyncQueue(): Promise<void> {
+    // Check auth and online status
     if (!this.hasAuth || !this.isOnline) {
       console.log('⏸️ Skipping sync (offline or not authenticated)');
       return;
     }
+
+    // Mutex lock: prevent concurrent sync operations (RACE CONDITION FIX)
+    if (this.isSyncing) {
+      console.log('⏸️ Sync already in progress, skipping...');
+      return;
+    }
+
+    this.isSyncing = true;
 
     try {
       const queue = await LocalStorage.getSyncQueue();
@@ -225,18 +257,37 @@ export class ContactService {
       for (const item of queue) {
         try {
           await this.syncItem(item);
+
+          // Remove from queue on success
           await LocalStorage.removeFromSyncQueue(item.id);
+          console.log(`✅ Successfully synced item ${item.id}`);
+
         } catch (error) {
-          console.log(`Failed to sync item ${item.id}:`, error);
-          // Will retry later
-          if (item.retries > 5) {
-            // Too many retries, remove from queue
+          console.log(`❌ Failed to sync item ${item.id}:`, error);
+
+          // Increment retry counter (BUG FIX: was never incremented before)
+          const currentRetries = item.retries || 0;
+          const newRetries = currentRetries + 1;
+
+          if (newRetries > 5) {
+            // Too many retries, remove from queue to prevent infinite loop
+            console.log(`🗑️ Removing item ${item.id} after ${newRetries} failed attempts`);
             await LocalStorage.removeFromSyncQueue(item.id);
+          } else {
+            // Update retry counter in queue
+            await LocalStorage.updateSyncQueueItem(item.id, {
+              ...item,
+              retries: newRetries
+            });
+            console.log(`🔄 Will retry item ${item.id} (attempt ${newRetries}/5)`);
           }
         }
       }
     } catch (error) {
-      console.log('Sync queue processing failed:', error);
+      console.log('❌ Sync queue processing failed:', error);
+    } finally {
+      // Release mutex lock
+      this.isSyncing = false;
     }
   }
 

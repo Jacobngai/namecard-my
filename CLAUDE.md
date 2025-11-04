@@ -69,7 +69,7 @@ NamecardMobile/
 │   │   ├── FloatingActionButton.tsx
 │   │   └── index.ts          # Business component exports
 │   ├── common/               # Reusable UI components
-│   │   ├── Logo.tsx
+│   │   ├── .tsx
 │   │   ├── TopLoader.tsx
 │   │   └── index.ts          # Common component exports
 │   └── navigation/           # Navigation components

@@ -1,3 +1,5 @@
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import { Contact } from '../types';
@@ -46,9 +48,9 @@ export class LocalStorage {
     try {
       const contacts = await this.getContacts();
 
-      // Generate local ID if not provided
+      // Generate local ID using UUID to prevent collisions
       const newContact: Contact = {
-        id: contact.id || `local_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        id: contact.id || `local_${uuidv4()}`,
         name: contact.name || '',
         company: contact.company || '',
         phone: contact.phone || '',
@@ -161,8 +163,8 @@ export class LocalStorage {
       // Ensure directory exists
       await this.init();
 
-      // Generate unique filename
-      const fileName = `card_${Date.now()}_${Math.random().toString(36).substring(2, 11)}.jpg`;
+      // Generate unique filename using UUID
+      const fileName = `card_${uuidv4()}.jpg`;
       const localUri = `${IMAGES_DIR}${fileName}`;
 
       // Copy image to app's document directory
@@ -206,7 +208,7 @@ export class LocalStorage {
 
       const newItem: SyncQueueItem = {
         ...item,
-        id: `sync_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        id: `sync_${uuidv4()}`,
         retries: 0
       };
 
@@ -243,6 +245,24 @@ export class LocalStorage {
       await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(filteredQueue));
     } catch (error) {
       console.error('Failed to remove from sync queue:', error);
+    }
+  }
+
+  /**
+   * Update an item in the sync queue (for retry counter)
+   *
+   * SECURITY FIX: Added to properly track retry attempts
+   */
+  static async updateSyncQueueItem(id: string, updatedItem: SyncQueueItem): Promise<void> {
+    try {
+      const queue = await this.getSyncQueue();
+      const updatedQueue = queue.map(item =>
+        item.id === id ? updatedItem : item
+      );
+      await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
+      console.log(`🔄 Updated sync queue item ${id}, retries: ${updatedItem.retries}`);
+    } catch (error) {
+      console.error('Failed to update sync queue item:', error);
     }
   }
 
