@@ -15,6 +15,11 @@ export default {
     runtimeVersion: {
       policy: "appVersion"
     },
+    // Plugins configuration
+    plugins: [
+      ...(appJson.expo.plugins || []),
+      "react-native-iap"
+    ],
     // Android-specific configuration
     android: {
       ...appJson.expo.android,
