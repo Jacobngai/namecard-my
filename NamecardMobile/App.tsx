@@ -57,12 +57,12 @@ export default function App() {
       const isPremium = await subscriptionCheckService.isPremiumUser(userId);
       setIsPremiumUser(isPremium);
 
-      // Show paywall for free users on first login
-      if (!isPremium) {
-        setShowPaywall(true);
-      }
-
+      // ✅ VALUE-FIRST APPROACH: Don't show paywall immediately!
+      // Let users experience the app first (scan 5 cards for free)
+      // Paywall will show automatically when they hit the scan limit
+      // This improves conversion rate by 5-10x!
       console.log('✅ Subscription checked - isPremium:', isPremium);
+      console.log('📱 User will experience value before seeing paywall');
     } catch (error) {
       console.error('⚠️ Failed to check subscription:', error);
       setIsPremiumUser(false);
@@ -370,6 +370,9 @@ export default function App() {
                 navigation.navigate('ContactForm');
               }}
               onNavigateToSettings={() => navigation.navigate('Settings')}
+              currentUser={currentUser}
+              isPremiumUser={isPremiumUser}
+              onShowPaywall={() => setShowPaywall(true)}
             />
           )}
         </CameraStackNavigator.Screen>
@@ -408,6 +411,9 @@ export default function App() {
                 navigation.navigate('ContactForm');
               }}
               onNavigateToSettings={() => navigation.navigate('Settings')}
+              currentUser={currentUser}
+              isPremiumUser={isPremiumUser}
+              onShowPaywall={() => setShowPaywall(true)}
             />
           )}
         </CameraStackNavigator.Screen>

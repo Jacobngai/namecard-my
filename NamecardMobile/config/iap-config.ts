@@ -19,7 +19,7 @@ export const IAP_CONFIG = {
    * true  = Use mock data (perfect for Expo Go testing)
    * false = Use real IAP (requires production build)
    */
-  MOCK_MODE: true,
+  MOCK_MODE: false,
 
   /**
    * MOCK PRODUCT IDs

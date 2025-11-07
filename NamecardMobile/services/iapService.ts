@@ -27,13 +27,15 @@ import {
 } from '../config/iap-config';
 import { simulatePurchase } from '../utils/subscription-utils';
 
-// Lazy load InAppPurchases only when needed and not in mock mode
-let InAppPurchases: any = null;
+// Lazy load react-native-iap only when needed and not in mock mode
+// NOTE: expo-in-app-purchases is DEPRECATED in Expo SDK 53
+// Using react-native-iap instead (free, no RevenueCat fees!)
+let RNIap: any = null;
 if (!IAP_CONFIG.MOCK_MODE) {
   try {
-    InAppPurchases = require('expo-in-app-purchases');
+    RNIap = require('react-native-iap');
   } catch (error) {
-    console.warn('[IAP Service] ⚠️ expo-in-app-purchases not available, using mock mode');
+    console.warn('[IAP Service] ⚠️ react-native-iap not available, using mock mode');
     // Will fall back to mock mode
   }
 }
@@ -61,7 +63,7 @@ class IAPService {
 
     console.log('[IAP Service] 🚀 Initializing...');
 
-    if (IAP_CONFIG.MOCK_MODE || !InAppPurchases) {
+    if (IAP_CONFIG.MOCK_MODE || !RNIap) {
       console.log('[IAP Service] 🎭 Running in MOCK MODE');
       // Simulate initialization delay
       await this.delay(500);
@@ -71,8 +73,8 @@ class IAPService {
     }
 
     try {
-      console.log('[IAP Service] 📱 Connecting to real IAP...');
-      await InAppPurchases.connectAsync();
+      console.log('[IAP Service] 📱 Connecting to real IAP (react-native-iap)...');
+      await RNIap.initConnection();
       this.isInitialized = true;
       console.log('[IAP Service] ✅ Real IAP connection established');
     } catch (error) {
@@ -87,9 +89,9 @@ class IAPService {
    * Call this when app closes or when done with IAP
    */
   async disconnect(): Promise<void> {
-    if (!IAP_CONFIG.MOCK_MODE && this.isInitialized) {
+    if (!IAP_CONFIG.MOCK_MODE && this.isInitialized && RNIap) {
       console.log('[IAP Service] 🔌 Disconnecting from IAP...');
-      await InAppPurchases.disconnectAsync();
+      await RNIap.endConnection();
       this.isInitialized = false;
       console.log('[IAP Service] ✅ Disconnected');
     }
@@ -103,7 +105,7 @@ class IAPService {
   async fetchProducts(): Promise<ProductInfo[]> {
     console.log('[IAP Service] 📦 Fetching products...');
 
-    if (IAP_CONFIG.MOCK_MODE || !InAppPurchases) {
+    if (IAP_CONFIG.MOCK_MODE || !RNIap) {
       return this.fetchMockProducts();
     }
 
@@ -115,7 +117,8 @@ class IAPService {
       console.log('[IAP Service] 📱 Platform:', Platform.OS);
       console.log('[IAP Service] 🆔 Product IDs:', productIdArray);
 
-      const { results } = await InAppPurchases.getProductsAsync(productIdArray);
+      // react-native-iap API: getSubscriptions() for subscription products
+      const results = await RNIap.getSubscriptions({ skus: productIdArray });
 
       if (!results || results.length === 0) {
         console.warn('[IAP Service] ⚠️ No products found, falling back to mock');
@@ -125,9 +128,9 @@ class IAPService {
       this.products = results.map((product: any) => ({
         productId: product.productId,
         type: product.productId.includes('monthly') ? 'monthly' : 'yearly',
-        price: product.price || '$0.00',
-        priceAmount: parseFloat(product.price?.replace(/[^0-9.]/g, '') || '0'),
-        currency: 'USD', // You can extract this from product.price
+        price: product.localizedPrice || '$0.00',
+        priceAmount: parseFloat(product.price || '0'),
+        currency: product.currency || 'USD',
         title: product.title || '',
         description: product.description || '',
       }));
@@ -203,7 +206,7 @@ class IAPService {
       console.log('[IAP Service] 🎟️ Promo code:', promoCode);
     }
 
-    if (IAP_CONFIG.MOCK_MODE || !InAppPurchases) {
+    if (IAP_CONFIG.MOCK_MODE || !RNIap) {
       return this.mockPurchase(plan, promoCode);
     }
 
@@ -216,20 +219,17 @@ class IAPService {
 
       console.log('[IAP Service] 🛒 Purchasing product ID:', productId);
 
-      // Set up purchase listener
-      InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }: any) => {
-        if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-          console.log('[IAP Service] ✅ Purchase successful via listener');
-        } else {
-          console.log('[IAP Service] ⚠️ Purchase failed via listener:', responseCode, errorCode);
-        }
+      // react-native-iap API: requestSubscription() for subscription purchase
+      const purchase = await RNIap.requestSubscription({
+        sku: productId,
+        ...(promoCode && Platform.OS === 'android' && {
+          offerToken: promoCode, // Android promo offers
+        }),
       });
 
-      // Initiate purchase
-      await InAppPurchases.purchaseItemAsync(productId);
+      console.log('[IAP Service] ✅ Purchase initiated:', purchase);
 
-      // Note: In production, you'd wait for the listener callback and handle async
-      // For initial implementation, we create subscription after purchase initiation
+      // Create subscription record
       const subscription = this.createSubscriptionFromPurchase(plan, promoCode);
       await this.saveSubscription(subscription);
 
@@ -242,7 +242,7 @@ class IAPService {
       console.error('[IAP Service] ❌ Purchase error:', error);
 
       // Check if user canceled
-      if (error.code === 'E_USER_CANCELLED') {
+      if (error.code === 'E_USER_CANCELLED' || error.code === 'E_USER_CANCELED') {
         return {
           success: false,
           error: 'Purchase canceled',
@@ -311,13 +311,13 @@ class IAPService {
   }> {
     console.log('[IAP Service] 🔄 Restoring purchases...');
 
-    if (IAP_CONFIG.MOCK_MODE || !InAppPurchases) {
+    if (IAP_CONFIG.MOCK_MODE || !RNIap) {
       return this.mockRestore();
     }
 
     try {
-      const response = await InAppPurchases.getPurchaseHistoryAsync();
-      const results = response?.results || [];
+      // react-native-iap API: getAvailablePurchases() to restore
+      const results = await RNIap.getAvailablePurchases();
 
       console.log('[IAP Service] 📜 Purchase history:', results.length, 'items');
 
@@ -335,6 +335,9 @@ class IAPService {
 
       const subscription = this.createSubscriptionFromPurchase(plan);
       await this.saveSubscription(subscription);
+
+      // Finish transaction (required by react-native-iap)
+      await RNIap.finishTransaction({ purchase: latestPurchase, isConsumable: false });
 
       console.log('[IAP Service] ✅ Purchases restored');
       return {
@@ -443,7 +446,7 @@ class IAPService {
    * Set mock subscription (for testing)
    */
   async setMockSubscription(plan: SubscriptionPlan): Promise<void> {
-    if (!IAP_CONFIG.MOCK_MODE && InAppPurchases) {
+    if (!IAP_CONFIG.MOCK_MODE && RNIap) {
       console.warn('[IAP Service] ⚠️ Cannot set mock subscription when not in mock mode');
       return;
     }

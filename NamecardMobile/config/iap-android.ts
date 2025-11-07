@@ -69,15 +69,30 @@ export const ANDROID_IAP_CONFIG = {
   },
 
   /**
-   * License Key (Base64 Encoded Public Key)
+   * ⚠️ DEPRECATED: License Key (Old Approach)
    *
-   * ⚠️ CRITICAL: This key is used for receipt verification
-   * SECURITY: This secret is now loaded from environment variables
+   * Google Play Console has deprecated the old License Verification Library (LVL).
+   * The traditional "License Key" from Services & APIs is NO LONGER USED.
    *
-   * The value below is a fallback for development only.
-   * In production, you MUST set ANDROID_PLAY_LICENSE_KEY in your environment.
+   * MODERN APPROACH (Required for 2025+):
+   * ----------------------------------------
+   * 1. Use Google Play Billing Library v5+ in your app
+   * 2. Implement server-side verification with Google Play Developer API
+   * 3. Use Real-time Developer Notifications (RTDN) for subscription events
+   * 4. Verify purchases via Google Play Developer API REST endpoints
+   *
+   * Server-side verification endpoints:
+   * - Subscriptions: https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptions
+   * - Products: https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.products
+   *
+   * You'll need:
+   * - Google Cloud Project with Play Developer API enabled
+   * - Service account with appropriate permissions
+   * - OAuth 2.0 credentials for server-side calls
+   *
+   * This field is kept for backward compatibility but is NOT USED.
    */
-  licenseKey: process.env.ANDROID_PLAY_LICENSE_KEY || '',
+  licenseKey: process.env.ANDROID_PLAY_LICENSE_KEY || 'DEPRECATED_NOT_USED',
 
   /**
    * Billing Permission

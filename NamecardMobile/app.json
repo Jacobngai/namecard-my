@@ -3,7 +3,7 @@
     "name": "WhatsCard",
     "slug": "namecard-my",
     "owner": "jacobai",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "sdkVersion": "53.0.0",
     "scheme": "whatscard",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.alittlebetter.alittlebetter",
+      "bundleIdentifier": "com.alittlebetter.better",
       "icon": "./assets/splash-icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to scan business cards.",
@@ -40,7 +40,7 @@
         "foregroundImage": "./assets/splash-icon.png",
         "backgroundColor": "#4A7A5C"
       },
-      "package": "com.whatscard.app",
+      "package": "com.resultmarketing.whatscard",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
