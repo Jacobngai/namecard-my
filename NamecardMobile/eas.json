@@ -9,7 +9,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleDebug",
+        "gradleCommand": ":app:bundlePlayDebug",
         "credentialsSource": "remote"
       },
       "ios": {
@@ -21,7 +21,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease",
+        "gradleCommand": ":app:bundlePlayRelease",
         "credentialsSource": "remote"
       },
       "ios": {
@@ -36,7 +36,7 @@
       },
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease",
+        "gradleCommand": ":app:bundlePlayRelease",
         "credentialsSource": "remote"
       },
       "ios": {
