@@ -318,14 +318,13 @@ export const getBestValueBadge = (plan: SubscriptionPlan): string | null => {
  * Mock purchase simulation
  *
  * Simulates a successful purchase for testing
+ * Note: Promo codes are handled by App Store/Play Store checkout (store-only approach)
  *
  * @param plan - Subscription plan
- * @param promoCode - Optional promo code
  * @returns Simulated subscription info
  */
 export const simulatePurchase = (
-  plan: SubscriptionPlan,
-  promoCode?: string
+  plan: SubscriptionPlan
 ): SubscriptionInfo => {
   const now = Date.now();
   const duration = IAP_CONFIG.DURATIONS[plan];
@@ -335,8 +334,7 @@ export const simulatePurchase = (
     status: 'active',
     purchaseDate: now,
     expiryDate: now + duration,
-    isPromo: !!promoCode,
-    promoCode: promoCode || undefined,
+    isPromo: false,
   };
 };
 

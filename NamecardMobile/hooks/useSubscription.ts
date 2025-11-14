@@ -29,7 +29,7 @@ interface UseSubscriptionReturn {
   productsError: string | null;
 
   // Actions
-  purchaseSubscription: (plan: SubscriptionPlan, promoCode?: string) => Promise<boolean>;
+  purchaseSubscription: (plan: SubscriptionPlan) => Promise<boolean>;
   restorePurchases: () => Promise<boolean>;
   refreshSubscription: () => Promise<void>;
   clearSubscription: () => Promise<void>;
@@ -119,15 +119,16 @@ export const useSubscription = (): UseSubscriptionReturn => {
 
   /**
    * Purchase a subscription
+   * Note: Promo codes are handled by App Store/Play Store checkout (store-only approach)
    */
   const purchaseSubscription = useCallback(
-    async (plan: SubscriptionPlan, promoCode?: string): Promise<boolean> => {
+    async (plan: SubscriptionPlan): Promise<boolean> => {
       try {
         console.log('[useSubscription] 💳 Starting purchase:', plan);
         setIsPurchasing(true);
         setError(null);
 
-        const result = await iapService.purchaseSubscription(plan, promoCode);
+        const result = await iapService.purchaseSubscription(plan);
 
         if (result.success && result.subscription) {
           console.log('[useSubscription] ✅ Purchase successful');

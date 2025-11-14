@@ -200,25 +200,22 @@ class IAPService {
   /**
    * Purchase a subscription
    *
+   * Note: Promo codes are handled by App Store/Play Store checkout (store-only approach)
+   *
    * @param plan - Subscription plan to purchase
-   * @param promoCode - Optional promo code
    * @returns Purchase result
    */
   async purchaseSubscription(
-    plan: SubscriptionPlan,
-    promoCode?: string
+    plan: SubscriptionPlan
   ): Promise<{
     success: boolean;
     subscription?: SubscriptionInfo;
     error?: string;
   }> {
     console.log('[IAP Service] 💳 Purchasing subscription:', plan);
-    if (promoCode) {
-      console.log('[IAP Service] 🎟️ Promo code:', promoCode);
-    }
 
     if (IAP_CONFIG.MOCK_MODE || !RNIap) {
-      return this.mockPurchase(plan, promoCode);
+      return this.mockPurchase(plan);
     }
 
     try {
@@ -231,11 +228,9 @@ class IAPService {
       console.log('[IAP Service] 🛒 Purchasing product ID:', productId);
 
       // react-native-iap API: requestSubscription() for subscription purchase
+      // Note: Promo codes are entered at store checkout, not in the app
       const purchase = await RNIap.requestSubscription({
         sku: productId,
-        ...(promoCode && Platform.OS === 'android' && {
-          offerToken: promoCode, // Android promo offers
-        }),
       });
 
       console.log('[IAP Service] ✅ Purchase completed:', purchase);
@@ -257,7 +252,7 @@ class IAPService {
       }
 
       // Create subscription record for local state
-      const subscription = this.createSubscriptionFromPurchase(plan, promoCode);
+      const subscription = this.createSubscriptionFromPurchase(plan);
       await this.saveSubscription(subscription);
 
       // CRITICAL: Finish transaction AFTER saving to database
@@ -292,8 +287,7 @@ class IAPService {
    * Mock purchase (for testing)
    */
   private async mockPurchase(
-    plan: SubscriptionPlan,
-    promoCode?: string
+    plan: SubscriptionPlan
   ): Promise<{
     success: boolean;
     subscription?: SubscriptionInfo;
@@ -314,7 +308,7 @@ class IAPService {
     }
 
     // Create mock subscription
-    const subscription = simulatePurchase(plan, promoCode);
+    const subscription = simulatePurchase(plan);
 
     // Save trial dates to database (mock mode)
     if (this.currentUserId) {
@@ -514,8 +508,7 @@ class IAPService {
   }
 
   private createSubscriptionFromPurchase(
-    plan: SubscriptionPlan,
-    promoCode?: string
+    plan: SubscriptionPlan
   ): SubscriptionInfo {
     const now = Date.now();
     const duration = IAP_CONFIG.DURATIONS[plan];
@@ -525,8 +518,7 @@ class IAPService {
       status: 'active',
       purchaseDate: now,
       expiryDate: now + duration,
-      isPromo: !!promoCode,
-      promoCode: promoCode || undefined,
+      isPromo: false,
     };
   }
 

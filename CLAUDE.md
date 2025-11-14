@@ -60,6 +60,138 @@ NamecardMobile/
 
 ---
 
+## 🎟️ PROMO CODES: STORE-ONLY APPROACH (NO APP UPDATES NEEDED)
+
+**IMPLEMENTATION: Store Console Only - Promo codes managed in App Store Connect & Google Play Console**
+
+### **How It Works:**
+
+WhatsCard uses a **Store-Only** promo code approach, meaning:
+- ✅ Users enter promo codes **during checkout** in the App Store or Play Store
+- ✅ **No app code changes** needed when you add/modify promo codes
+- ✅ **No app updates** required to activate new promotional offers
+- ✅ **Unlimited promo codes** can be created without developer involvement
+
+### **User Experience:**
+
+1. User opens PaywallScreen and sees subscription plans
+2. User sees instruction: "Have a promo code? Enter it at checkout in the App Store or Play Store to get your discount!"
+3. User taps "Start Free Trial" or "Subscribe Now"
+4. App Store/Play Store checkout opens
+5. User enters promo code in the store's checkout UI
+6. Store applies discount automatically
+7. User completes purchase with discounted price
+
+### **App Implementation:**
+
+**Files Modified (v1.0.1+):**
+- `PaywallScreen.tsx` - Removed promo code input field, added store instruction
+- `iapService.ts` - Removed `promoCode` parameter from `purchaseSubscription()`
+- `useSubscription.ts` - Removed `promoCode` parameter from hook interface
+- `subscription-utils.ts` - Removed `promoCode` from `simulatePurchase()`
+
+**What the App Does:**
+- Shows pricing plans (monthly/yearly)
+- Calls `iapService.purchaseSubscription(plan)` with NO promo code parameter
+- react-native-iap opens the native store checkout
+- Store handles promo code entry and discount calculation
+- App receives purchase confirmation with final price paid
+
+**What the App Does NOT Do:**
+- ❌ Does not validate promo codes in app
+- ❌ Does not show discounted prices before checkout
+- ❌ Does not apply discounts in app logic
+- ❌ Does not need to be updated when new promo codes are added
+
+### **How to Add New Promo Codes:**
+
+#### **iOS (App Store Connect):**
+
+1. Go to App Store Connect → My Apps → WhatsCard
+2. Navigate to Features → Subscriptions → Subscription Group
+3. Select the subscription product (monthly or yearly)
+4. Click "Subscription Prices" → "Create Promotional Offer"
+5. Enter:
+   - **Offer Code**: e.g., "SUMMER2025" (user-facing code)
+   - **Discount Type**: Percentage or Fixed Price
+   - **Discount Amount**: e.g., 70% off
+   - **Duration**: e.g., "Ongoing" or "Limited Time"
+   - **Eligibility**: New subscribers, lapsed subscribers, or all users
+6. Click "Save" → Offer is live immediately (no app update!)
+
+#### **Android (Google Play Console):**
+
+1. Go to Play Console → WhatsCard → Monetize → Subscriptions
+2. Select the subscription product
+3. Click "Manage Offers" → "Create Offer"
+4. Enter:
+   - **Offer ID**: e.g., "SUMMER2025"
+   - **Promo Code**: e.g., "SUMMER2025"
+   - **Discount Type**: Percentage or Fixed Price
+   - **Discount Amount**: e.g., 70% off
+   - **Duration**: e.g., "Forever" or "First X months"
+   - **Eligibility**: New subscribers or eligible users
+5. Click "Save" → Offer is live immediately (no app update!)
+
+### **Example Promo Codes (Documented in Config Files):**
+
+**WHATSBNI:**
+- **Discount**: 70% off
+- **Applies To**: Yearly Premium subscription only
+- **Final Price**: $36.00/year (was $119.99)
+- **Setup**: Created in both App Store Connect and Google Play Console
+- **Status**: Active
+
+**Note:** Config files (`iap-config.ts`, `iap-android.ts`, `iap-ios.ts`) document promo codes for reference only. They do NOT affect app functionality.
+
+### **Benefits of Store-Only Approach:**
+
+1. **🚀 Instant Activation**: Create promo codes and they work immediately
+2. **💰 No App Updates**: Save time and money on development/testing/deployment
+3. **🎯 Flexible Marketing**: Create limited-time offers without code changes
+4. **📊 Store Analytics**: Track promo code usage directly in store dashboards
+5. **🔒 Store-Managed Security**: Apple/Google handle validation and fraud prevention
+6. **♾️ Unlimited Codes**: Create as many promo codes as you need
+
+### **Legacy Code (Deprecated):**
+
+**Previous Implementation (v1.0.0 and earlier):**
+- PaywallScreen had promo code input field
+- `purchaseSubscription(plan, promoCode)` accepted promo code parameter
+- Android used `offerToken` parameter (incorrect implementation)
+- iOS promotional offers not implemented
+
+**Migration Notes:**
+- All app-level promo code handling has been removed in v1.0.1+
+- Promo code validation functions remain in `subscription-utils.ts` for documentation purposes but are not used
+- The `PROMO_CODES` object in `iap-config.ts` is kept for documentation only
+
+### **Testing Promo Codes:**
+
+**iOS (App Store Sandbox):**
+1. Create a sandbox test account in App Store Connect
+2. Sign out of App Store on test device
+3. Open app and go to PaywallScreen
+4. Tap subscribe button → App Store checkout opens
+5. Sign in with sandbox account
+6. Enter promo code in checkout UI
+7. Verify discount is applied before completing purchase
+
+**Android (Google Play Billing Test):**
+1. Add test account email to Play Console → Setup → License Testing
+2. Ensure device is signed in with test account
+3. Open app and go to PaywallScreen
+4. Tap subscribe button → Play Store checkout opens
+5. Enter promo code in checkout UI
+6. Verify discount is applied before completing purchase
+
+**Mock Mode Testing:**
+- Set `IAP_CONFIG.MOCK_MODE = true` in `iap-config.ts`
+- Promo codes not tested in mock mode (store-managed)
+- Mock mode useful for UI/flow testing only
+
+---
+
 ## 🚨 CRITICAL: ANDROID KEYSTORE & PACKAGE NAME
 
 **⚠️ THESE ARE PERMANENTLY LOCKED - NEVER CHANGE! ⚠️**

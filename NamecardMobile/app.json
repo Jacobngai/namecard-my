@@ -3,7 +3,7 @@
     "name": "WhatsCard",
     "slug": "namecard-my",
     "owner": "jacobai",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "sdkVersion": "53.0.0",
     "scheme": "whatscard",
     "orientation": "portrait",

@@ -177,8 +177,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
               <>
                 <PricingCard
                   plan="yearly"
-                  price={finalYearlyPrice}
-                  originalPrice={promoApplied ? yearlyPrice : undefined}
+                  price={yearlyPrice}
                   title="Yearly Premium"
                   description="Best value - Save 20%"
                   isSelected={selectedPlan === 'yearly'}
@@ -199,36 +198,13 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             )}
           </View>
 
-          {/* Promo Code Section */}
-          {selectedPlan === 'yearly' && !promoApplied && (
-            <View style={styles.promoSection}>
-              <Text style={styles.promoLabel}>Have a promo code?</Text>
-              <View style={styles.promoInputContainer}>
-                <TextInput
-                  style={styles.promoInput}
-                  placeholder="Enter code (e.g., WHATSBNI)"
-                  placeholderTextColor="#9CA3AF"
-                  value={promoCode}
-                  onChangeText={(text) => {
-                    setPromoCode(text.toUpperCase());
-                    setPromoError('');
-                  }}
-                  autoCapitalize="characters"
-                  editable={!isPurchasing && !isRestoring}
-                />
-                <TouchableOpacity
-                  style={[styles.promoButton, !promoCode && styles.promoButtonDisabled]}
-                  onPress={handleApplyPromo}
-                  disabled={!promoCode || isPurchasing || isRestoring}
-                >
-                  <Text style={styles.promoButtonText}>Apply</Text>
-                </TouchableOpacity>
-              </View>
-              {promoError ? (
-                <Text style={styles.promoErrorText}>{promoError}</Text>
-              ) : null}
-            </View>
-          )}
+          {/* Promo Code Instructions */}
+          <View style={styles.promoInfoSection}>
+            <Ionicons name="pricetag" size={20} color="#FFD700" />
+            <Text style={styles.promoInfoText}>
+              Have a promo code? Enter it at checkout in the App Store or Play Store to get your discount!
+            </Text>
+          </View>
 
           {/* No Payment Due Now - Cal AI Style */}
           {/* ✅ Show trial messaging ONLY if trial is not expired */}
@@ -261,9 +237,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           <View style={styles.priceDetailsContainer}>
             <Text style={styles.priceDetailsMain}>
               {selectedPlan === 'yearly'
-                ? promoApplied
-                  ? `Just ${formatPrice(finalYearlyPrice)}/year (${formatPrice(finalYearlyPrice / 12)}/mo)`
-                  : `Just ${formatPrice(finalYearlyPrice)}/year`
+                ? `Just ${formatPrice(yearlyPrice)}/year (${formatPrice(yearlyPrice / 12)}/mo)`
                 : `${formatPrice(monthlyPrice)}/month, billed monthly`}
             </Text>
           </View>
@@ -427,56 +401,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
   },
-  promoSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  promoLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
-  },
-  promoInputContainer: {
+  promoInfoSection: {
     flexDirection: 'row',
-    marginBottom: 8,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    gap: 12,
   },
-  promoInput: {
+  promoInfoText: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginRight: 8,
-  },
-  promoButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-  },
-  promoButtonDisabled: {
-    opacity: 0.5,
-  },
-  promoButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#4A7A5C',
-  },
-  promoErrorText: {
-    color: '#FCA5A5',
     fontSize: 14,
-    marginTop: 8,
-  },
-  promoHint: {
-    color: '#D1FAE5',
-    fontSize: 14,
-    marginTop: 8,
+    fontWeight: '500',
+    color: '#FFD700',
+    lineHeight: 20,
   },
   noPaymentContainer: {
     flexDirection: 'row',
