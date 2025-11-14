@@ -158,14 +158,14 @@ npx eas build --platform ios --profile production
 - ✅ Upload feature graphic (1024x500)
 - ✅ Add 8 screenshots (1080x1920)
 - ✅ Select app category: Business
-- ✅ Add contact email: support@whatscard.my
+- ✅ Add contact email: support@whatscard.app
 - ✅ Add privacy policy URL
 - ✅ Add website URL
 
 #### Step 3: Content Rating
 - ✅ Click "Start Questionnaire"
 - ✅ Select "IARC Questionnaire"
-- ✅ Fill email: support@whatscard.my
+- ✅ Fill email: support@whatscard.app
 - ✅ Select app category: Utility, Productivity, Communication
 - ✅ Answer content questions:
   - Violence: None
@@ -254,7 +254,7 @@ npx eas build --platform ios --profile production
 - ✅ Select category: Business
 - ✅ Secondary category: Productivity
 - ✅ Add subtitle (30 chars): "Smart Business Card Scanner"
-- ✅ Privacy policy URL: https://whatscard.my/privacy
+- ✅ Privacy policy URL: https://whatscard.app/privacy-policy
 - ✅ Copyright: "2025 WhatsCard"
 - ✅ Age rating: 4+
 
@@ -281,8 +281,8 @@ npx eas build --platform ios --profile production
 - ✅ Add description (4000 chars max)
 - ✅ Add keywords (100 chars max)
 - ✅ Add promotional text (170 chars)
-- ✅ Add support URL: https://whatscard.my/support
-- ✅ Add marketing URL: https://whatscard.my
+- ✅ Add support URL: https://whatscard.app/support
+- ✅ Add marketing URL: https://whatscard.app
 
 #### Step 6: Upload Screenshots
 - ✅ Upload for 6.5" Display (iPhone 14 Pro Max)
@@ -310,9 +310,9 @@ Or manually:
   - First name: [Your name]
   - Last name: [Your last name]
   - Phone: [Your phone]
-  - Email: support@whatscard.my
+  - Email: support@whatscard.app
 - ✅ Add demo account (if app requires login)
-  - Username: demo@whatscard.my
+  - Username: demo@whatscard.app
   - Password: Demo123!
 - ✅ Add notes for reviewers:
   ```

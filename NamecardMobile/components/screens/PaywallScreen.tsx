@@ -3,10 +3,11 @@
  *
  * Beautiful subscription paywall with:
  * - Monthly and Yearly pricing options
- * - Promo code support (WHATSBNI = 70% off)
  * - Restore purchases
  * - Feature highlights
  * - Professional, modern UI
+ *
+ * Note: Promo codes are handled by App Store/Play Store checkout (store-only approach)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -15,7 +16,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
   StyleSheet,
@@ -27,20 +27,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PricingCard } from '../business/PricingCard';
 import { useSubscription } from '../../hooks/useSubscription';
 import { IAP_CONFIG, SubscriptionPlan } from '../../config/iap-config';
-import { validatePromoCode, calculatePromoPrice, formatPrice } from '../../utils/subscription-utils';
+import { formatPrice } from '../../utils/subscription-utils';
 
 interface PaywallScreenProps {
   onClose?: () => void;
   onSuccess?: () => void;
   onSkip?: () => void;
   showSkipButton?: boolean;
+  isTrialExpired?: boolean; // NEW: Track if user's trial has expired
 }
 
 export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   onClose,
   onSuccess,
   onSkip,
-  showSkipButton = true
+  showSkipButton = false, // DEFAULT: No skip button (non-dismissible paywall)
+  isTrialExpired = false
 }) => {
   const {
     products,
@@ -52,35 +54,10 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   } = useSubscription();
 
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('yearly');
-  const [promoCode, setPromoCode] = useState('');
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [promoError, setPromoError] = useState('');
 
-  // Get pricing info
+  // Get pricing info from store products
   const monthlyPrice = products.find(p => p.type === 'monthly')?.priceAmount || IAP_CONFIG.PRICING.monthly.usd;
   const yearlyPrice = products.find(p => p.type === 'yearly')?.priceAmount || IAP_CONFIG.PRICING.yearly.usd;
-
-  // Calculate promo price if applied
-  const finalYearlyPrice = promoApplied
-    ? calculatePromoPrice(yearlyPrice, promoCode, 'yearly')
-    : yearlyPrice;
-
-  /**
-   * Handle promo code application
-   */
-  const handleApplyPromo = () => {
-    setPromoError('');
-
-    const validation = validatePromoCode(promoCode, selectedPlan);
-
-    if (!validation.isValid) {
-      setPromoError(validation.message);
-      return;
-    }
-
-    setPromoApplied(true);
-    Alert.alert('✅ Promo Applied!', validation.message);
-  };
 
   /**
    * Handle purchase
@@ -88,10 +65,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   const handlePurchase = async () => {
     console.log('[PaywallScreen] 💳 Initiating purchase:', selectedPlan);
 
-    const success = await purchaseSubscription(
-      selectedPlan,
-      promoApplied ? promoCode : undefined
-    );
+    const success = await purchaseSubscription(selectedPlan);
 
     if (success) {
       Alert.alert(
@@ -140,17 +114,10 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   };
 
   /**
-   * Handle plan change - clear promo if switching to monthly
+   * Handle plan change
    */
   const handlePlanChange = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
-
-    // Clear promo if switching to monthly (promo only for yearly)
-    if (plan === 'monthly' && promoApplied) {
-      setPromoApplied(false);
-      setPromoCode('');
-      setPromoError('');
-    }
   };
 
   return (
@@ -166,16 +133,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             <Text style={styles.headerTitle}>Go Premium</Text>
           </View>
           <View style={styles.headerRight}>
-            {showSkipButton && onSkip && (
-              <TouchableOpacity onPress={onSkip} style={styles.skipButton}>
-                <Text style={styles.skipButtonText}>Try First</Text>
-              </TouchableOpacity>
-            )}
-            {onClose && (
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={28} color="#FFFFFF" />
-              </TouchableOpacity>
-            )}
+            {/* ❌ REMOVED: No close button - paywall is non-dismissible */}
+            {/* Users MUST subscribe to continue using the app */}
           </View>
         </View>
 
@@ -272,10 +231,11 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           )}
 
           {/* No Payment Due Now - Cal AI Style */}
-          {selectedPlan === 'yearly' && (
+          {/* ✅ Show trial messaging ONLY if trial is not expired */}
+          {!isTrialExpired && selectedPlan === 'yearly' && (
             <View style={styles.noPaymentContainer}>
               <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-              <Text style={styles.noPaymentText}>No Payment Due Now</Text>
+              <Text style={styles.noPaymentText}>3-Day Free Trial - No Payment Due Now</Text>
             </View>
           )}
 
@@ -291,7 +251,9 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             {isPurchasing ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.purchaseButtonText}>Continue</Text>
+              <Text style={styles.purchaseButtonText}>
+                {isTrialExpired ? 'Subscribe Now' : 'Start Free Trial'}
+              </Text>
             )}
           </TouchableOpacity>
 

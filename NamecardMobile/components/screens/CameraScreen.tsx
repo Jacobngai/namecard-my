@@ -19,7 +19,6 @@ import { GeminiOCRService } from '../../services/geminiOCR';
 import { autoCropBusinessCard } from '../../utils/imageProcessing';
 import { LocalStorage } from '../../services/localStorage';
 import { ContactService } from '../../services/contactService';
-import { scanLimitService } from '../../services/scanLimitService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -129,49 +128,12 @@ export function CameraScreen({
       return;
     }
 
-    // 🔒 SCAN LIMIT CHECK (for authenticated users)
+    // 🔒 STRICT PAYWALL CHECK - No free scans, must have subscription/trial
     if (currentUser?.id && !isPremiumUser) {
-      try {
-        // Check if user can scan
-        const scanInfo = await scanLimitService.canUserScan(currentUser.id);
-
-        if (!scanInfo.canScan) {
-          // Limit reached - show paywall
-          Alert.alert(
-            '📸 Daily Limit Reached',
-            `You've used all ${scanInfo.dailyLimit} free scans today.\n\n` +
-            `Upgrade to Premium for unlimited scanning!`,
-            [
-              {
-                text: 'Maybe Tomorrow',
-                style: 'cancel',
-                onPress: () => {
-                  console.log('User declined upgrade');
-                }
-              },
-              {
-                text: 'Upgrade to Premium',
-                style: 'default',
-                onPress: () => {
-                  console.log('User wants to upgrade');
-                  onShowPaywall?.();
-                }
-              }
-            ]
-          );
-          return; // Don't allow scan
-        }
-
-        // Show gentle reminder when approaching limit
-        if (scanInfo.scansRemaining === 2) {
-          console.log('⚠️ User has 2 scans remaining');
-        } else if (scanInfo.scansRemaining === 1) {
-          console.log('⚠️ User has 1 scan remaining');
-        }
-      } catch (error) {
-        console.error('❌ Error checking scan limit:', error);
-        // Continue with scan even if check fails (offline mode)
-      }
+      // Block scan - show paywall immediately
+      console.log('❌ User has no active subscription/trial - blocking scan');
+      onShowPaywall?.();
+      return; // Don't allow scan
     }
 
     setIsScanning(true);
@@ -190,42 +152,8 @@ export function CameraScreen({
       const croppedImage = await autoCropBusinessCard(photo.uri);
       console.log('✂️ Image auto-cropped to frame boundaries');
 
-      // 📊 INCREMENT SCAN COUNT (for authenticated non-premium users)
-      if (currentUser?.id && !isPremiumUser) {
-        try {
-          const result = await scanLimitService.incrementScanCount(currentUser.id);
-          console.log(`✅ Scan count incremented: ${result.dailyCount} scans today`);
-
-          // Show gentle reminder when approaching limit
-          const remaining = 5 - result.dailyCount; // Assuming 5 is the free tier limit
-          if (remaining === 2) {
-            setTimeout(() => {
-              Alert.alert(
-                '📸 Almost at your limit!',
-                `You have ${remaining} free scans remaining today.`,
-                [{ text: 'OK', style: 'default' }]
-              );
-            }, 2000); // Show after 2 seconds
-          } else if (remaining === 1) {
-            setTimeout(() => {
-              Alert.alert(
-                '⚠️ Last free scan!',
-                'This is your last free scan for today. Upgrade to Premium for unlimited scanning!',
-                [
-                  { text: 'OK', style: 'cancel' },
-                  {
-                    text: 'Upgrade',
-                    onPress: () => onShowPaywall?.()
-                  }
-                ]
-              );
-            }, 2000);
-          }
-        } catch (error) {
-          console.error('❌ Error incrementing scan count:', error);
-          // Continue anyway (offline mode)
-        }
-      }
+      // Scan successful - premium users only reach this point
+      console.log('✅ Scan successful - user has active subscription/trial');
 
       // Navigate to form immediately with the cropped image
       // OCR will be processed in the background

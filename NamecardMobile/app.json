@@ -3,7 +3,7 @@
     "name": "WhatsCard",
     "slug": "namecard-my",
     "owner": "jacobai",
-    "version": "1.0.1",
+    "version": "2.0.2",
     "sdkVersion": "53.0.0",
     "scheme": "whatscard",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.alittlebetter.better",
+      "bundleIdentifier": "com.whatscard.app",
       "icon": "./assets/splash-icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to scan business cards.",
@@ -32,7 +32,7 @@
         "usesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:whatscard.my"
+        "applinks:whatscard.app"
       ]
     },
     "android": {
@@ -40,7 +40,7 @@
         "foregroundImage": "./assets/splash-icon.png",
         "backgroundColor": "#4A7A5C"
       },
-      "package": "com.resultmarketing.whatscard",
+      "package": "com.whatscard.app",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -56,7 +56,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "whatscard.my",
+              "host": "whatscard.app",
               "pathPrefix": "/"
             }
           ],
@@ -82,12 +82,20 @@
       "expo-av",
       "expo-file-system",
       "expo-document-picker",
-      "expo-font"
+      "expo-font",
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "enforceNavigationBarContrast": false
+          }
+        }
+      ]
     ],
     "description": "WhatsCard - Smart Business Card Scanner. Scan, save, and connect with anyone on WhatsApp instantly. Transform paper cards into digital connections with AI-powered OCR technology.",
     "primaryColor": "#3B82F6",
     "backgroundColor": "#FFFFFF",
-    "privacyPolicy": "https://whatscard.my/privacy",
+    "privacyPolicy": "https://whatscard.app/privacy-policy",
     "category": "Business"
   }
 }

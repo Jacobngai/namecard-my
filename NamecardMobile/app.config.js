@@ -23,6 +23,7 @@ export default {
     // Android-specific configuration
     android: {
       ...appJson.expo.android,
+      versionCode: 5, // Version code 5 for Google Play (Android 15/16 compatibility update)
     },
     // iOS-specific configuration
     ios: {

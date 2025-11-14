@@ -34,24 +34,44 @@ export const IAP_CONFIG = {
   /**
    * REAL PRODUCT IDs
    *
+   * ⚠️ ⚠️ ⚠️ CRITICAL WARNING - NEVER CHANGE THESE PRODUCT IDs! ⚠️ ⚠️ ⚠️
+   *
+   * These Product IDs are PERMANENTLY LOCKED in Google Play & App Store.
+   * Once created, they CANNOT be changed, deleted, or renamed.
+   *
+   * Changing these IDs will:
+   * - ❌ Break the app for ALL existing users
+   * - ❌ Lose all historical revenue data
+   * - ❌ Require new app submission (weeks of delay)
+   * - ❌ Break existing subscriptions
+   * - ❌ Cause user complaints and refunds
+   *
    * iOS App Store Connect:
    * - App ID: 6754809694
-   * - Bundle ID: com.alittlebetter.better
-   * - Subscription Group: Premium Access (21821977)
+   * - Bundle ID: com.whatscard.app
+   * - Subscription Group: Premium Subscriptions (21832389)
    *
    * Android Google Play Console:
    * - Package Name: com.resultmarketing.whatscard
    * - Developer Account: Drinking Monster (6055773806895794556)
    * - Service Fee: 15%
+   *
+   * ✅ You CAN change (without code updates):
+   * - Prices (RM 199 → RM 149)
+   * - Trial duration (3 days → 7 days)
+   * - Descriptions and localization
+   * - Offer terms
+   *
+   * 🔒 DOCUMENTED IN: CLAUDE.md - DO NOT MODIFY THESE IDs! 🔒
    */
   PRODUCTS: {
     ios: {
-      monthly: 'monthly_premium_subscription',  // Apple ID: 6754809579
-      yearly: 'yearly_premium_subscription',    // Apple ID: 6754809873
+      monthly: 'whatscard_monthly_premium',  // ❌ IMMUTABLE - Apple ID: 6755295183
+      yearly: 'whatscard_yearly_premium',    // ❌ IMMUTABLE - Apple ID: 6755295624
     },
     android: {
-      monthly: 'monthly_premium_subscription',  // Product ID from Google Play
-      yearly: 'yearly_premium_subscription',    // Product ID from Google Play
+      monthly: 'monthly_premium_subscription',  // ❌ IMMUTABLE - Google Play Product ID
+      yearly: 'yearly_premium_subscription',    // ❌ IMMUTABLE - Google Play Product ID
     },
   },
 
@@ -75,31 +95,31 @@ export const IAP_CONFIG = {
    * PRICING STRUCTURE
    *
    * Unified Pricing (Both iOS & Android):
-   * - Monthly: $9.95 USD per month
-   * - Yearly: $117.99 USD per year
-   * - Yearly with WHATSBNI promo: $35.40 USD per year (70% off)
+   * - Monthly: $9.99 USD per month
+   * - Yearly: $119.99 USD per year
+   * - Yearly with WHATSBNI promo: $36.00 USD per year (70% off)
    *
    * Note: Both platforms use the same pricing for consistency.
    * Actual prices will be fetched from app stores.
    */
   PRICING: {
     monthly: {
-      usd: 9.95,
-      displayPrice: '$9.95',
+      usd: 9.99,
+      displayPrice: '$9.99',
       period: 'month',
       description: 'Perfect for trying out',
     },
     yearly: {
-      usd: 117.99,
-      displayPrice: '$117.99',
+      usd: 119.99,
+      displayPrice: '$119.99',
       period: 'year',
       description: 'Best value - Save 20%',
       savings: 20, // percentage
       badge: 'BEST VALUE',
     },
     yearlyWithPromo: {
-      usd: 35.40,  // 70% off $117.99
-      displayPrice: '$35.40',
+      usd: 36.00,  // 70% off $119.99
+      displayPrice: '$36.00',
       period: 'year',
       description: 'Special offer - 70% off',
     },
@@ -163,14 +183,15 @@ export const IAP_CONFIG = {
   ],
 
   /**
-   * FREE TIER LIMITS
+   * FREE TIER - REMOVED
    *
-   * Limits for free users (to encourage upgrades)
+   * ❌ No free tier anymore - strict paywall enforced
+   * Users MUST have active subscription or trial to scan
    */
   FREE_TIER: {
-    maxScans: 10,
-    maxContacts: 50,
-    features: ['basic_scan', 'manual_entry', 'basic_export'],
+    maxScans: 0, // ❌ No free scans
+    maxContacts: 0, // ❌ No free contacts
+    features: [], // ❌ No free features
   },
 
   /**

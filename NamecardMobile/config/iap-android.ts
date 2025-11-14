@@ -21,10 +21,17 @@ export const ANDROID_IAP_CONFIG = {
 
   /**
    * Product IDs
+   *
+   * ⚠️ CRITICAL WARNING - THESE PRODUCT IDs ARE IMMUTABLE! ⚠️
+   * These IDs are permanently registered in Google Play Console.
+   * Once created, they CANNOT be changed, deleted, or renamed.
+   * Changing them will break the app for all existing users!
+   *
+   * 🔒 DOCUMENTED IN: CLAUDE.md - NEVER MODIFY! 🔒
    */
   products: {
     monthly: {
-      productId: 'monthly_premium_subscription',
+      productId: 'monthly_premium_subscription',  // ❌ IMMUTABLE
       price: 9.95,
       displayPrice: '$9.95',
       priceMicros: 9950000, // $9.95 in micros (price * 1,000,000)
@@ -34,7 +41,7 @@ export const ANDROID_IAP_CONFIG = {
       description: 'Premium features billed monthly',
     },
     yearly: {
-      productId: 'yearly_premium_subscription',
+      productId: 'yearly_premium_subscription',  // ❌ IMMUTABLE
       price: 117.99,
       displayPrice: '$117.99',
       priceMicros: 117990000, // $117.99 in micros

@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Alert, ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CameraScreen } from './components/screens/CameraScreen';
 import { ContactForm } from './components/business/ContactForm';
 import { ContactList } from './components/screens/ContactList';
@@ -22,7 +23,7 @@ import { SplashScreen } from './components/screens/SplashScreen';
 import { ContactDetailModal } from './components/business/ContactDetailModal';
 import { useGroups } from './hooks/useGroups';
 import { subscriptionCheckService } from './services/subscriptionCheckService';
-import { scanLimitService } from './services/scanLimitService';
+import { iapService } from './services/iapService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -41,6 +42,7 @@ export default function App() {
   const [showContactDetail, setShowContactDetail] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [isPremiumUser, setIsPremiumUser] = useState(false);
+  const [isTrialExpired, setIsTrialExpired] = useState(false); // Track if trial has expired
 
   // Initialize groups hook
   const {
@@ -54,18 +56,29 @@ export default function App() {
   // Check subscription status function (defined before useEffects that use it)
   const checkSubscriptionStatus = React.useCallback(async (userId: string) => {
     try {
+      // ✅ Check both subscription AND trial status
       const isPremium = await subscriptionCheckService.isPremiumUser(userId);
-      setIsPremiumUser(isPremium);
+      const trialStatus = await subscriptionCheckService.getTrialStatus(userId);
 
-      // ✅ VALUE-FIRST APPROACH: Don't show paywall immediately!
-      // Let users experience the app first (scan 5 cards for free)
-      // Paywall will show automatically when they hit the scan limit
-      // This improves conversion rate by 5-10x!
+      setIsPremiumUser(isPremium);
+      setIsTrialExpired(trialStatus.isTrialExpired && !isPremium);
+
       console.log('✅ Subscription checked - isPremium:', isPremium);
-      console.log('📱 User will experience value before seeing paywall');
+      console.log('📊 Trial status:', trialStatus);
+      console.log('🔒 Strict paywall mode - no free tier');
+
+      // Log trial details for debugging
+      if (trialStatus.isTrialActive) {
+        console.log(`⏰ Trial active - ${trialStatus.daysRemaining} days remaining`);
+      } else if (trialStatus.isTrialExpired) {
+        console.log('⚠️ Trial expired - user must subscribe');
+      } else if (!trialStatus.hasTrialRecord) {
+        console.log('🆕 New user - eligible for 3-day free trial');
+      }
     } catch (error) {
       console.error('⚠️ Failed to check subscription:', error);
       setIsPremiumUser(false);
+      setIsTrialExpired(false);
     }
   }, []);
 
@@ -78,11 +91,15 @@ export default function App() {
       if (user) {
         setIsAuthenticated(true);
         setCurrentUser(user);
+        // ✅ Set user ID in iapService for trial tracking
+        iapService.setUserId(user.id);
         console.log('✅ Auth state changed: User logged in');
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
         setContacts([]);
+        // ✅ Clear user ID from iapService on logout
+        iapService.setUserId(null);
         console.log('📤 Auth state changed: User logged out');
       }
     });
@@ -155,58 +172,11 @@ export default function App() {
     setScannedCardData(cardData);
   };
 
-  const checkScanLimit = async (): Promise<boolean> => {
-    if (!currentUser?.id) {
-      console.log('⚠️ No user ID, allowing scan (offline mode)');
-      return true;
-    }
-
-    try {
-      const limitInfo = await scanLimitService.canUserScan(currentUser.id);
-
-      if (!limitInfo.canScan) {
-        Alert.alert(
-          'Daily Limit Reached',
-          `You've reached your daily scan limit of ${limitInfo.dailyLimit} scans. Upgrade to Premium for unlimited scans!`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Upgrade',
-              style: 'default',
-              onPress: () => setShowPaywall(true),
-            },
-          ]
-        );
-        return false;
-      }
-
-      console.log(`✅ Scan allowed - ${limitInfo.scansRemaining} scans remaining`);
-      return true;
-    } catch (error) {
-      console.error('⚠️ Error checking scan limit:', error);
-      // Allow scan on error (offline mode)
-      return true;
-    }
-  };
+  // ❌ REMOVED: checkScanLimit function (no longer needed with strict paywall)
+  // Scan blocking is now handled directly in CameraScreen
 
   const handleNavigateToForm = async (imageUri: string, processOCR: boolean, isBackImage: boolean = false) => {
-    // Check scan limit before proceeding (only for front image, not back image)
-    if (!isBackImage) {
-      const canScan = await checkScanLimit();
-      if (!canScan) {
-        return; // Don't proceed if limit reached
-      }
-
-      // Increment scan count
-      if (currentUser?.id) {
-        try {
-          await scanLimitService.incrementScanCount(currentUser.id);
-          console.log('✅ Scan count incremented');
-        } catch (error) {
-          console.error('⚠️ Failed to increment scan count:', error);
-        }
-      }
-    }
+    // ✅ Scan limit check removed - handled in CameraScreen with strict paywall
 
     if (isBackImage) {
       // Capturing back image
@@ -518,40 +488,43 @@ export default function App() {
   // Show splash screen
   if (showSplash) {
     return (
-      <>
+      <SafeAreaProvider>
         <StatusBar style="light" />
         <SplashScreen onFinish={() => setShowSplash(false)} />
-      </>
+      </SafeAreaProvider>
     );
   }
 
   // Show loading screen during initialization
   if (isLoading) {
     return (
-      <View style={loadingStyles.container}>
-        <StatusBar style="auto" />
-        <View style={loadingStyles.content}>
-          <ActivityIndicator size="large" color="#4A7A5C" />
-          <Text style={loadingStyles.title}>WhatsCard</Text>
-          <Text style={loadingStyles.subtitle}>Initializing...</Text>
+      <SafeAreaProvider>
+        <View style={loadingStyles.container}>
+          <StatusBar style="auto" />
+          <View style={loadingStyles.content}>
+            <ActivityIndicator size="large" color="#4A7A5C" />
+            <Text style={loadingStyles.title}>WhatsCard</Text>
+            <Text style={loadingStyles.subtitle}>Initializing...</Text>
+          </View>
         </View>
-      </View>
+      </SafeAreaProvider>
     );
   }
 
   // Show authentication screen if not authenticated
   if (!isAuthenticated) {
     return (
-      <>
+      <SafeAreaProvider>
         <StatusBar style="auto" />
         <AuthScreen onAuthSuccess={handleAuthSuccess} />
-      </>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <StatusBar style="auto" />
       <Tab.Navigator
         screenOptions={({ route, navigation }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -635,28 +608,27 @@ export default function App() {
         onEdit={handleContactEdit}
       />
 
-      {/* Paywall Modal */}
+      {/* Paywall Modal - STRICT MODE (Non-Dismissible) */}
       {showPaywall && !isPremiumUser && (
         <View style={StyleSheet.absoluteFill}>
           <PaywallScreen
-            onClose={() => setShowPaywall(false)}
             onSuccess={() => {
+              console.log('✅ User subscribed successfully');
               setShowPaywall(false);
-              setIsPremiumUser(true);
-              // Refresh subscription status
+              // Refresh subscription status after successful purchase
               if (currentUser?.id) {
                 checkSubscriptionStatus(currentUser.id);
               }
             }}
-            onSkip={() => {
-              console.log('✅ User skipped paywall');
-              setShowPaywall(false);
-            }}
-            showSkipButton={true}
+            isTrialExpired={isTrialExpired}
+            // ❌ REMOVED: onClose (no X button - paywall is non-dismissible)
+            // ❌ REMOVED: onSkip (no skip button - user MUST subscribe)
+            // ❌ REMOVED: showSkipButton (strict paywall enforcement)
           />
         </View>
       )}
-    </NavigationContainer>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

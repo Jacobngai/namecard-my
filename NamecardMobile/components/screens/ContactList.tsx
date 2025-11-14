@@ -478,9 +478,7 @@ export function ContactList({
           </>
         ) : (
           <>
-            <TouchableOpacity>
-              <Ionicons name="menu" size={24} color="#374151" />
-            </TouchableOpacity>
+            <View style={{ width: 24 }} />
             <Text style={styles.headerTitle}>Contacts</Text>
             <TouchableOpacity
               onPress={() => {

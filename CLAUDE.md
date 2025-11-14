@@ -2,6 +2,148 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 CRITICAL: IMMUTABLE SUBSCRIPTION PRODUCT IDs
+
+**⚠️ THESE PRODUCT IDs ARE PERMANENTLY LOCKED - NEVER CHANGE THEM! ⚠️**
+
+### **Google Play (Android) - Package: com.resultmarketing.whatscard**
+```typescript
+// ❌ IMMUTABLE - Cannot be changed without new app submission
+PRODUCTS: {
+  android: {
+    monthly: 'monthly_premium_subscription',
+    yearly: 'yearly_premium_subscription',
+  }
+}
+```
+
+### **App Store (iOS) - Bundle: com.alittlebetter.better**
+```typescript
+// ❌ IMMUTABLE - Cannot be changed without new app submission
+PRODUCTS: {
+  ios: {
+    monthly: 'monthly_premium_subscription',
+    yearly: 'yearly_premium_subscription',
+  }
+}
+```
+
+### **Why These IDs Are IMMUTABLE:**
+1. **Google Play/App Store**: Once created, Product IDs CANNOT be deleted or renamed
+2. **User Purchases**: Existing subscribers are linked to these IDs forever
+3. **Code References**: Changing IDs requires updating code + new AAB/IPA upload
+4. **Revenue Tracking**: Historical revenue data is tied to these IDs
+
+### **What You CAN Change (Without Code Changes):**
+- ✅ Subscription prices (RM 199 → RM 149)
+- ✅ Free trial duration (3 days → 7 days)
+- ✅ Offer terms and conditions
+- ✅ Localized names and descriptions
+- ✅ Availability (countries/territories)
+
+### **What REQUIRES Code Changes + Re-upload:**
+- ❌ Product IDs (monthly_premium_subscription → monthly_v2)
+- ❌ Adding new tiers (adding 'lifetime' subscription)
+- ❌ Package/Bundle ID changes
+
+### **File Locations Using These IDs:**
+```
+NamecardMobile/
+├── config/iap-config.ts         ← Product IDs defined here
+├── config/iap-android.ts         ← Android config
+├── config/iap-ios.ts             ← iOS config
+├── services/iapService.ts        ← Purchase logic
+└── hooks/useSubscription.ts      ← Subscription hook
+```
+
+**🔒 IF YOU CHANGE THESE IDs, THE APP WILL BREAK FOR ALL EXISTING USERS! 🔒**
+
+---
+
+## 🚨 CRITICAL: ANDROID KEYSTORE & PACKAGE NAME
+
+**⚠️ THESE ARE PERMANENTLY LOCKED - NEVER CHANGE! ⚠️**
+
+### **Android Package Name (IMMUTABLE)**
+```
+Package: com.whatscard.app
+```
+
+**This CANNOT be changed after first Google Play upload!**
+
+### **iOS Bundle Identifier (IMMUTABLE)**
+```
+Bundle ID: com.whatscard.app
+App ID: 6754809694
+```
+
+**This CANNOT be changed after first App Store upload!**
+
+### **Android Keystore (IMMUTABLE)**
+```
+SHA-1: BD:10:12:2C:87:05:7A:45:3F:6E:F1:2F:51:EB:FB:84:28:0B:77:5F
+Key Alias: c90c9e3fc4759b4ccac8f5f02db96e87
+Package: com.whatscard.app
+Location: Expo Dashboard → com.whatscard.app package
+Backup: C:\Users\walte\Documents\WhatsCard\Keystores\whatscard-production.jks
+```
+
+**This keystore MUST be used for ALL Android builds forever!**
+
+### **Why These Are IMMUTABLE:**
+1. **Google Play Lock:** First upload locks both package name AND keystore fingerprint
+2. **Cannot Change:** Changing either requires publishing a COMPLETELY NEW APP
+3. **User Impact:** Existing users cannot update if keystore changes
+4. **Revenue Loss:** Lose all reviews, downloads, subscriptions
+
+### **How to Ensure Consistency:**
+1. ✅ **ALWAYS verify** package name in app.json = `com.whatscard.app`
+2. ✅ **ALWAYS check** Expo dashboard uses keystore SHA-1: `BD:10:12...`
+3. ✅ **BACKUP keystore** to: `C:\Users\walte\Documents\WhatsCard\Keystores\`
+4. ✅ **NEVER delete** keystore from Expo dashboard
+5. ✅ **NEVER change** package name in app.json
+
+### **Keystore Location:**
+```
+Expo Dashboard: https://expo.dev/accounts/jacobai/projects/namecard-my/credentials
+Application: com.whatscard.app ✅ CORRECT PACKAGE
+Backup: C:\Users\walte\Documents\WhatsCard\Keystores\whatscard-production.jks
+```
+
+**🔒 LOSING THIS KEYSTORE = LOSING ACCESS TO GOOGLE PLAY APP FOREVER! 🔒**
+
+---
+
+## 🚨 CRITICAL: GOOGLE PLAY PHOTO/VIDEO PERMISSIONS POLICY (2024-2025)
+
+**⚠️ REQUIRED: Declare Photo/Video Permission Usage**
+
+When uploading to Google Play Console, you MUST justify these permissions:
+- `READ_MEDIA_IMAGES`
+- `READ_MEDIA_VIDEO`
+
+### **What to Write in Google Play Console:**
+
+**For READ_MEDIA_IMAGES:**
+```
+WhatsCard's core functionality requires frequent access to camera and photo library for business card scanning. Users scan business cards multiple times per session, and the app immediately processes images with AI-powered OCR to extract contact information. The Android Photo Picker cannot be used because our app requires real-time camera access and immediate image processing for the scanning workflow. Images are stored in the user's device and cloud storage for contact management.
+```
+
+**For READ_MEDIA_VIDEO:**
+```
+This permission is required by the expo-camera library for full camera functionality. While WhatsCard primarily scans photos (business cards), the camera module requires video capability for optimal image capture and focus control. Video permission ensures camera hardware operates correctly across all Android devices.
+```
+
+### **Why These Permissions Exist:**
+1. `expo-camera` plugin automatically adds READ_MEDIA_IMAGES
+2. `expo-media-library` plugin adds READ_MEDIA_VIDEO
+3. Core feature = business card scanning = frequent photo access
+4. Cannot use Android Photo Picker (requires real-time camera)
+
+**Google Play will approve this because scanning is your PRIMARY feature!**
+
+---
+
 ## 🚨 CRITICAL: Supabase MCP Server Usage
 
 **MANDATORY RULE FOR ALL CLAUDE CODE SESSIONS:**
@@ -26,6 +168,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WhatsCard 1.0 is a React Native/TypeScript smart networking app focused on business card scanning and contact management with WhatsApp integration. Built with offline-first architecture and Supabase backend.
 
+## ⚠️ CRITICAL: Version Locking for Expo SDK 53 (2025+)
+
+**MANDATORY - NEVER DEVIATE FROM THESE VERSIONS:**
+
+```json
+{
+  "expo": "~53.0.0",              // LOCKED - Do not upgrade
+  "react": "19.0.0",              // LOCKED - Expo SDK 53 requires React 19
+  "react-native": "0.79.6",       // LOCKED - Expo SDK 53 requires RN 0.79
+
+  // ❌ NEVER USE expo-in-app-purchases (DEPRECATED in SDK 53!)
+  // ✅ USE react-native-iap instead (free, no fees!)
+  "react-native-iap": "12.15.4",  // LOCKED - Works with SDK 53, free, no RevenueCat fees
+
+  // Gradle (Android Build)
+  "gradle": "8.10.2",             // LOCKED - Compatible with Java 17-21 (NOT 9.0, NOT 8.13)
+}
+```
+
+**WHY THESE VERSIONS:**
+
+1. **expo-in-app-purchases**: REMOVED from Expo SDK 53 (causes build failures!)
+2. **react-native-iap**: Official replacement, uses Google Play Billing v6 & StoreKit, FREE
+3. **Gradle 8.10.2**: Works with Java 17-21, NOT compatible with Java 24
+4. **Gradle 9.0**: Causes build errors with Android Gradle Plugin (avoid!)
+
+**WHEN CLAUDE CODE SUGGESTS PACKAGE CHANGES:**
+- ❌ DO NOT install any package not explicitly listed in package.json
+- ❌ DO NOT upgrade Expo SDK without full regression testing
+- ✅ ONLY use `npx expo install [package]` (auto-selects compatible versions)
+
+**CRITICAL: react-native-iap Configuration (android/app/build.gradle):**
+```gradle
+// REQUIRED for react-native-iap to work (solves variant ambiguity)
+defaultConfig {
+    // ... other config
+    missingDimensionStrategy 'store', 'play'  // Use Google Play variant
+}
+
+flavorDimensions "store"
+productFlavors {
+    play {
+        dimension "store"
+        // Google Play Store variant (required)
+    }
+}
+```
+
+**WHY:** react-native-iap provides both Amazon & Google Play variants. Without this config, Gradle build fails with "variant ambiguity" error.
+
+---
+
 ## Architecture
 
 ### Current State (v1.0.0)
@@ -38,6 +232,7 @@ WhatsCard 1.0 is a React Native/TypeScript smart networking app focused on busin
 - **Storage**: Supabase Storage for card images
 - **Styling**: Custom React Native components
 - **Data**: LocalStorage with Supabase sync (offline-first)
+- **IAP**: react-native-iap 12.15.4 (FREE - no RevenueCat fees!)
 
 ## Code Structure
 

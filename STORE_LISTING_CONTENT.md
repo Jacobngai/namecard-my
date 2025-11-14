@@ -97,10 +97,10 @@ Join thousands of professionals who have ditched the shoebox of business cards a
 Download WhatsCard today and turn every introduction into an opportunity!
 
 **💬 CONTACT & SUPPORT**
-• Email: support@whatscard.my
-• Website: https://whatscard.my
-• Privacy Policy: https://whatscard.my/privacy
-• Terms of Service: https://whatscard.my/terms
+• Email: support@whatscard.app
+• Website: https://whatscard.app
+• Privacy Policy: https://whatscard.app/privacy-policy
+• Terms of Service: https://whatscard.app/terms
 
 **Note:** WhatsApp integration requires WhatsApp to be installed on your device.
 
@@ -201,7 +201,7 @@ business card, scanner, OCR, contact management, WhatsApp, networking, CRM, busi
 ## 🔐 Privacy Policy & Terms
 
 ### Privacy Policy URL
-https://whatscard.my/privacy
+https://whatscard.app/privacy-policy
 
 **Key Points:**
 - We collect: Name, email, phone, business card images
@@ -211,7 +211,7 @@ https://whatscard.my/privacy
 - User rights: Data export, deletion, opt-out
 
 ### Terms of Service URL
-https://whatscard.my/terms
+https://whatscard.app/terms
 
 **Key Points:**
 - Subscription terms and billing
@@ -223,11 +223,11 @@ https://whatscard.my/terms
 
 ## 📧 Support & Contact
 
-- **Support Email:** support@whatscard.my
-- **Website:** https://whatscard.my
-- **Marketing Website:** https://whatscard.my
-- **Privacy Policy:** https://whatscard.my/privacy
-- **Terms of Service:** https://whatscard.my/terms
+- **Support Email:** support@whatscard.app
+- **Website:** https://whatscard.app
+- **Marketing Website:** https://whatscard.app
+- **Privacy Policy:** https://whatscard.app/privacy-policy
+- **Terms of Service:** https://whatscard.app/terms
 
 ---
 
@@ -258,9 +258,9 @@ https://whatscard.my/terms
 ### Before Submission
 - [ ] All screenshots taken (8 per platform)
 - [ ] App icon meets requirements (1024x1024 iOS, 512x512 Android)
-- [ ] Privacy policy published at whatscard.my/privacy
-- [ ] Terms of service published at whatscard.my/terms
-- [ ] Support email active (support@whatscard.my)
+- [ ] Privacy policy published at whatscard.app/privacy-policy
+- [ ] Terms of service published at whatscard.app/terms
+- [ ] Support email active (support@whatscard.app)
 - [ ] Test app on multiple devices
 - [ ] Fix all critical bugs
 - [ ] Complete content rating questionnaire
