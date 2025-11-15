@@ -33,7 +33,12 @@
       },
       "associatedDomains": [
         "applinks:whatscard.app"
-      ]
+      ],
+      "entitlements": {
+        "com.apple.developer.in-app-purchase": [
+          "ProductionSandbox"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {

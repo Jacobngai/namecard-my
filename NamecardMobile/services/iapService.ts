@@ -126,13 +126,30 @@ class IAPService {
       const productIdArray = [productIds.monthly, productIds.yearly];
 
       console.log('[IAP Service] 📱 Platform:', Platform.OS);
-      console.log('[IAP Service] 🆔 Product IDs:', productIdArray);
+      console.log('[IAP Service] 🆔 Product IDs to fetch:', productIdArray);
+
+      // ✅ CRITICAL: Ensure IAP is initialized before fetching
+      if (!this.isInitialized) {
+        console.warn('[IAP Service] ⚠️ IAP not initialized - initializing now...');
+        await this.initialize();
+      }
 
       // react-native-iap API: getSubscriptions() for subscription products
+      console.log('[IAP Service] 🔄 Calling RNIap.getSubscriptions()...');
       const results = await RNIap.getSubscriptions({ skus: productIdArray });
 
+      // ✅ CRITICAL: Log raw response from App Store/Play Store
+      console.log('[IAP Service] 📊 Raw results from store:');
+      console.log(JSON.stringify(results, null, 2));
+
       if (!results || results.length === 0) {
-        console.warn('[IAP Service] ⚠️ No products found, falling back to mock');
+        console.error('[IAP Service] ❌ No products returned from App Store/Play Store!');
+        console.error('[IAP Service] 🔍 Expected product IDs:', productIdArray);
+        console.error('[IAP Service] 📱 Platform:', Platform.OS);
+        console.error('[IAP Service] 🔌 IAP initialized:', this.isInitialized);
+        console.error('[IAP Service] 🏪 Bundle ID (iOS):', 'com.whatscard.app');
+        console.error('[IAP Service] 📦 Package (Android):', 'com.whatscard.app');
+        console.warn('[IAP Service] ⚠️ Falling back to MOCK products (purchases will FAIL!)');
         return this.fetchMockProducts();
       }
 
@@ -146,11 +163,14 @@ class IAPService {
         description: product.description || '',
       }));
 
-      console.log('[IAP Service] ✅ Fetched', this.products.length, 'products');
+      console.log('[IAP Service] ✅ Successfully fetched', this.products.length, 'REAL products from store');
+      console.log('[IAP Service] 📋 Products:', this.products.map(p => p.productId).join(', '));
       return this.products;
     } catch (error) {
       console.error('[IAP Service] ❌ Error fetching products:', error);
-      console.log('[IAP Service] 🔄 Falling back to mock products');
+      console.error('[IAP Service] 📱 Platform:', Platform.OS);
+      console.error('[IAP Service] 🔌 IAP initialized:', this.isInitialized);
+      console.log('[IAP Service] 🔄 Falling back to MOCK products (purchases will FAIL!)');
       return this.fetchMockProducts();
     }
   }
@@ -217,13 +237,37 @@ class IAPService {
     }
 
     try {
+      // ✅ CRITICAL: Verify products were loaded before purchase
+      if (this.products.length === 0) {
+        console.error('[IAP Service] ❌ No products loaded - fetching now...');
+        await this.fetchProducts();
+
+        if (this.products.length === 0) {
+          console.error('[IAP Service] ❌ FATAL: Unable to load products from App Store/Play Store!');
+          console.error('[IAP Service] 🔍 This usually means:');
+          console.error('[IAP Service]   1. Products not configured in App Store Connect/Play Console');
+          console.error('[IAP Service]   2. Bundle ID mismatch (expected: com.whatscard.app)');
+          console.error('[IAP Service]   3. Testing in wrong environment (production vs sandbox)');
+          console.error('[IAP Service]   4. Network connectivity issues');
+          throw new Error('Unable to load subscription products. Please check your internet connection and try again.');
+        }
+      }
+
       const productId = this.getProductIdForPlan(plan);
 
       if (!productId) {
         throw new Error(`Product not found for plan: ${plan}`);
       }
 
-      console.log('[IAP Service] 🛒 Purchasing product ID:', productId);
+      // ✅ CRITICAL: Verify the product ID is NOT a mock product
+      if (productId.startsWith('mock_')) {
+        console.error('[IAP Service] ❌ FATAL: Attempting to purchase MOCK product!');
+        console.error('[IAP Service] 🔍 Product ID:', productId);
+        console.error('[IAP Service] 🔍 This means products were not fetched from App Store/Play Store');
+        throw new Error('Subscription products are not available. Please restart the app and try again.');
+      }
+
+      console.log('[IAP Service] 🛒 Purchasing REAL product ID:', productId);
 
       // react-native-iap API: requestSubscription() for subscription purchase
       const purchase = await RNIap.requestSubscription({
