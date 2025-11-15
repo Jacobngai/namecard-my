@@ -4,7 +4,7 @@ import { SupabaseService } from './supabase';
 import { AuthManager } from './authManager';
 import { validateContact } from '../utils/validation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 /**
  * Unified contact service that prioritizes local storage

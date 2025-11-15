@@ -4,7 +4,7 @@
     "slug": "namecard-my",
     "owner": "jacobai",
     "version": "2.0.3",
-    "sdkVersion": "53.0.0",
+    "sdkVersion": "54.0.0",
     "scheme": "whatscard",
     "orientation": "portrait",
     "icon": "./assets/splash-icon.png",

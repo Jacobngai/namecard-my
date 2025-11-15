@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Contact } from '../types';
 import Config from '../config/environment';
 import { normalizePhoneNumber } from '../utils/phoneFormatter';

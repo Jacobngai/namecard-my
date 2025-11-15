@@ -1,7 +1,7 @@
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Contact } from '../types';
 
 const CONTACTS_KEY = '@namecard/contacts';

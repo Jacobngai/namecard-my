@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Contact, Group } from '../types';
 import { AuthManager } from './authManager';
 import { getSupabaseClient } from './supabaseClient';

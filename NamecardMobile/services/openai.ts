@@ -1,5 +1,8 @@
+// TODO: Migrate to expo-audio (hooks-based) when refactoring to React hooks
+// expo-av is deprecated in SDK 54 but still functional
+// Will be removed in SDK 55 - requires refactoring this class to hooks
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import Config from '../config/environment';
 
 // Type for recording

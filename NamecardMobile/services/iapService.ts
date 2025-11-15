@@ -200,8 +200,6 @@ class IAPService {
   /**
    * Purchase a subscription
    *
-   * Note: Promo codes are handled by App Store/Play Store checkout (store-only approach)
-   *
    * @param plan - Subscription plan to purchase
    * @returns Purchase result
    */
@@ -228,7 +226,6 @@ class IAPService {
       console.log('[IAP Service] 🛒 Purchasing product ID:', productId);
 
       // react-native-iap API: requestSubscription() for subscription purchase
-      // Note: Promo codes are entered at store checkout, not in the app
       const purchase = await RNIap.requestSubscription({
         sku: productId,
       });

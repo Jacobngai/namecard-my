@@ -22,7 +22,7 @@ import { FloatingActionButton } from '../business/FloatingActionButton';
 import { GroupSelectionModal } from '../business/GroupSelectionModal';
 import { useIntroMessage } from '../../hooks/useIntroMessage';
 import { formatPhoneForDisplay } from '../../utils/phoneFormatter';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 interface ContactListProps {
