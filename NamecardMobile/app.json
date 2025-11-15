@@ -83,6 +83,15 @@
       "expo-file-system",
       "expo-document-picker",
       "expo-font",
+      "react-native-iap",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.1.20"
+          }
+        }
+      ],
       [
         "react-native-edge-to-edge",
         {
@@ -94,8 +103,6 @@
     ],
     "description": "WhatsCard - Smart Business Card Scanner. Scan, save, and connect with anyone on WhatsApp instantly. Transform paper cards into digital connections with AI-powered OCR technology.",
     "primaryColor": "#3B82F6",
-    "backgroundColor": "#FFFFFF",
-    "privacyPolicy": "https://whatscard.app/privacy-policy",
-    "category": "Business"
+    "backgroundColor": "#FFFFFF"
   }
 }
