@@ -9,3 +9,5 @@ export { SplashScreen } from './SplashScreen';
 export { DataConsentScreen, hasDataConsent, revokeDataConsent } from './DataConsentScreen';
 export { PaywallScreen } from './PaywallScreen';
 export { TestPaywallScreen } from './TestPaywallScreen';
+export { ChatbotScreen } from './ChatbotScreen';
+export { APITokensScreen } from './APITokensScreen';

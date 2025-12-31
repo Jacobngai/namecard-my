@@ -1,5 +1,5 @@
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import Config from '../config/environment';
 
 // Type for recording
@@ -99,34 +99,50 @@ export class OpenAIService {
         throw new Error('OpenAI API key not configured');
       }
 
-      // Create form data
-      const formData = new FormData();
-      
-      // Read audio file and create blob
-      const audioFile = await fetch(audioUri);
-      const audioBlob = await audioFile.blob();
-      
-      formData.append('file', audioBlob, 'audio.m4a');
-      formData.append('model', 'whisper-1');
-      formData.append('language', 'en');
+      console.log('📝 Transcribing audio from:', audioUri);
 
-      const response = await fetch(this.WHISPER_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Config.OPENAI_API_KEY}`,
-        },
-        body: formData,
-      });
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(audioUri);
+      if (!fileInfo.exists) {
+        throw new Error('Audio file not found');
+      }
+      console.log('✅ Audio file exists, size:', fileInfo.size, 'bytes');
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Whisper API error: ${JSON.stringify(errorData)}`);
+      console.log('🌐 Uploading to OpenAI Whisper API...');
+
+      // Use FileSystem.uploadAsync for reliable file uploads in React Native
+      const uploadResult = await FileSystem.uploadAsync(
+        this.WHISPER_API_URL,
+        audioUri,
+        {
+          httpMethod: 'POST',
+          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          fieldName: 'file',
+          headers: {
+            'Authorization': `Bearer ${Config.OPENAI_API_KEY}`,
+          },
+          parameters: {
+            model: 'whisper-1',
+          },
+        }
+      );
+
+      console.log('📡 Upload response status:', uploadResult.status);
+
+      if (uploadResult.status !== 200) {
+        console.error('❌ Whisper API error response:', uploadResult.body);
+        throw new Error(`Whisper API error (${uploadResult.status}): ${uploadResult.body}`);
       }
 
-      const data: WhisperResponse = await response.json();
+      const data: WhisperResponse = JSON.parse(uploadResult.body);
+      console.log('✅ Transcription successful:', data.text);
       return data.text.trim();
     } catch (error) {
       console.error('❌ Audio transcription failed:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+        console.error('Error stack:', error.stack);
+      }
       throw new Error(error instanceof Error ? error.message : 'Failed to transcribe audio');
     }
   }

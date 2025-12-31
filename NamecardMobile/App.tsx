@@ -12,6 +12,7 @@ import { ContactList } from './components/screens/ContactList';
 import { ProfileScreen } from './components/screens/ProfileScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
 import { PaywallScreen } from './components/screens/PaywallScreen';
+import { ChatbotScreen } from './components/screens/ChatbotScreen';
 import { Contact, Group } from './types';
 import { ContactService } from './services/contactService';
 import { GroupService } from './services/groupService';
@@ -672,7 +673,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
         <NavigationContainer ref={navigationRef}>
         <StatusBar style="auto" />
         <Tab.Navigator
@@ -684,6 +685,8 @@ export default function App() {
               iconName = focused ? 'camera' : 'camera-outline';
             } else if (route.name === 'Contacts') {
               iconName = focused ? 'people' : 'people-outline';
+            } else if (route.name === 'Chatbot') {
+              iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
             } else if (route.name === 'Profile') {
               iconName = focused ? 'person' : 'person-outline';
             } else {
@@ -726,10 +729,10 @@ export default function App() {
           component={CameraStack}
           options={{ title: 'Scan' }}
         />
-        <Tab.Screen 
-          name="Contacts" 
+        <Tab.Screen
+          name="Contacts"
           component={ContactsStack}
-          options={{ 
+          options={{
             title: 'Contacts',
             tabBarBadge: contacts.length > 0 ? contacts.length : undefined,
             tabBarBadgeStyle: {
@@ -739,8 +742,13 @@ export default function App() {
             }
           }}
         />
-        <Tab.Screen 
-          name="Profile" 
+        <Tab.Screen
+          name="Chatbot"
+          component={ChatbotScreen}
+          options={{ title: 'AI Assistant' }}
+        />
+        <Tab.Screen
+          name="Profile"
           component={ProfileStack}
           options={{ title: 'Profile' }}
         />
