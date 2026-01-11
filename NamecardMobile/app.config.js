@@ -43,11 +43,12 @@ export default {
       eas: {
         projectId: "66d97936-e847-4b80-a6c7-bf90ea4a0d80"
       },
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
-      GOOGLE_VISION_API_KEY: process.env.GOOGLE_VISION_API_KEY || "",
-      SUPABASE_URL: process.env.SUPABASE_URL || "",
-      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
+      // Support both EXPO_PUBLIC_ prefix (Expo SDK 50+) and legacy prefix
+      GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "",
+      GOOGLE_VISION_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY || process.env.GOOGLE_VISION_API_KEY || "",
+      SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "",
+      SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "",
+      OPENAI_API_KEY: process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "",
       APP_ENV: process.env.APP_ENV || "development",
       DEBUG_MODE: process.env.DEBUG_MODE === "true" || process.env.DEBUG_MODE === true
     }

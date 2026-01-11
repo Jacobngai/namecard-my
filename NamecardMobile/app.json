@@ -26,7 +26,24 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to save and select business card images.",
         "NSMicrophoneUsageDescription": "This app needs access to microphone for voice notes.",
         "NSContactsUsageDescription": "This app needs access to contacts to save scanned business cards.",
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to add location data to business cards."
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to add location data to business cards.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "supabase.co": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2"
+            },
+            "wvahortlayplumgrcmvi.supabase.co": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2"
+            }
+          }
+        }
       },
       "config": {
         "usesNonExemptEncryption": false
