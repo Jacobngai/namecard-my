@@ -131,12 +131,15 @@ export class ContactService {
   private static async syncFromCloud(): Promise<void> {
     try {
       console.log('📥 Auto-syncing contacts from cloud...');
+      console.log('📥 Auth status:', this.hasAuth ? 'Authenticated ✅' : 'Not authenticated ❌');
+
       const cloudContacts = await SupabaseService.getContacts();
       console.log(`📥 Found ${cloudContacts.length} contacts in cloud`);
 
       if (cloudContacts.length > 0) {
         // Get existing local contacts to check for duplicates
         const localContacts = await LocalStorage.getContacts();
+        console.log(`📱 Found ${localContacts.length} contacts in local storage`);
         const localIds = new Set(localContacts.map(c => c.id));
 
         let newCount = 0;
@@ -148,6 +151,7 @@ export class ContactService {
             // New contact - add it
             await LocalStorage.saveContact(contact);
             newCount++;
+            console.log(`📥 Added new contact: ${contact.name} (${contact.id})`);
           } else {
             // Existing contact - check if cloud version is newer
             const localContact = localContacts.find(c => c.id === contact.id);
@@ -158,15 +162,24 @@ export class ContactService {
                 // Cloud version is newer - update it
                 await LocalStorage.saveContact(contact);
                 updatedCount++;
+                console.log(`🔄 Updated contact: ${contact.name} (${contact.id})`);
               }
             }
           }
         }
 
         console.log(`✅ Cloud sync complete: ${newCount} new, ${updatedCount} updated`);
+        console.log(`📊 Total local contacts after sync: ${newCount + localContacts.length}`);
+      } else {
+        console.log('ℹ️ No contacts found in cloud to sync');
       }
     } catch (error) {
-      console.warn('⚠️ Failed to sync from cloud:', error);
+      console.error('❌ Failed to sync from cloud:', error);
+      // Log more detailed error information
+      if (error instanceof Error) {
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error stack:', error.stack);
+      }
       throw error;
     }
   }
