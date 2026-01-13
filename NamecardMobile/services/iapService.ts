@@ -209,7 +209,12 @@ class IAPService {
     try {
       const platform = Platform.OS as 'ios' | 'android';
       const productIds = getProductIds(platform);
-      const productIdArray = [productIds.monthly, productIds.yearly];
+      const productIdArray = [
+        productIds.basic_monthly,
+        productIds.basic_yearly,
+        productIds.monthly,
+        productIds.yearly,
+      ];
 
       console.log('[IAP Service] 📱 Platform:', Platform.OS);
       console.log('[IAP Service] 🆔 Product IDs:', productIdArray);
@@ -293,7 +298,18 @@ class IAPService {
       this.products = results.map((product: any) => {
         // CRITICAL FIX: react-native-iap v14 product objects use .id (NOT .productId)
         const productId = product?.id || '';
-        const type: SubscriptionPlan = productId.includes('monthly') ? 'monthly' : 'yearly';
+
+        // Determine subscription plan type based on product ID
+        let type: SubscriptionPlan;
+        if (productId.includes('basic_monthly')) {
+          type = 'basic_monthly';
+        } else if (productId.includes('basic_yearly')) {
+          type = 'basic_yearly';
+        } else if (productId.includes('monthly')) {
+          type = 'monthly';
+        } else {
+          type = 'yearly';
+        }
 
         // Use hardcoded pricing from IAP_CONFIG instead of Google Play's localized price
         // This prevents confusing currency symbols (e.g., $ instead of RM in Malaysia)
@@ -339,6 +355,26 @@ class IAPService {
     }
 
     const mockProducts: ProductInfo[] = [
+      // 🟢 Basic Plan
+      {
+        productId: IAP_CONFIG.MOCK_PRODUCTS.basic_monthly,
+        type: 'basic_monthly',
+        price: IAP_CONFIG.PRICING.basic_monthly.displayPrice,
+        priceAmount: IAP_CONFIG.PRICING.basic_monthly.usd,
+        currency: 'USD',
+        title: 'WhatsCard Basic Monthly',
+        description: IAP_CONFIG.PRICING.basic_monthly.description,
+      },
+      {
+        productId: IAP_CONFIG.MOCK_PRODUCTS.basic_yearly,
+        type: 'basic_yearly',
+        price: IAP_CONFIG.PRICING.basic_yearly.displayPrice,
+        priceAmount: IAP_CONFIG.PRICING.basic_yearly.usd,
+        currency: 'USD',
+        title: 'WhatsCard Basic Yearly',
+        description: IAP_CONFIG.PRICING.basic_yearly.description,
+      },
+      // 🟡 Premium Plan
       {
         productId: IAP_CONFIG.MOCK_PRODUCTS.monthly,
         type: 'monthly',
@@ -894,7 +930,12 @@ class IAPService {
       // FIX #3: Filter only OUR product IDs (not all purchases)
       const platform = Platform.OS as 'ios' | 'android';
       const productIds = getProductIds(platform);
-      const validProductIds = [productIds.monthly, productIds.yearly];
+      const validProductIds = [
+        productIds.basic_monthly,
+        productIds.basic_yearly,
+        productIds.monthly,
+        productIds.yearly,
+      ];
 
       const ourPurchases = results.filter((purchase: any) =>
         validProductIds.includes(purchase.productId)
@@ -912,7 +953,18 @@ class IAPService {
 
       // Get most recent purchase
       const latestPurchase = ourPurchases[ourPurchases.length - 1];
-      const plan = latestPurchase.productId.includes('monthly') ? 'monthly' : 'yearly';
+
+      // Determine subscription plan type from restored purchase
+      let plan: SubscriptionPlan;
+      if (latestPurchase.productId.includes('basic_monthly')) {
+        plan = 'basic_monthly';
+      } else if (latestPurchase.productId.includes('basic_yearly')) {
+        plan = 'basic_yearly';
+      } else if (latestPurchase.productId.includes('monthly')) {
+        plan = 'monthly';
+      } else {
+        plan = 'yearly';
+      }
 
       // FIX #4: Validate receipt before restoring
       console.log('[IAP Service] 🔐 Validating restored purchase...');

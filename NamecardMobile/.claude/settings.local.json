@@ -32,7 +32,8 @@
       "Bash(adb:*)",
       "Bash(curl:*)",
       "mcp__supabase__execute_sql",
-      "Bash(timeout /t 10 /nobreak)"
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(npx expo-doctor)"
     ]
   },
   "enabledMcpjsonServers": [

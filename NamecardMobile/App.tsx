@@ -4,8 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Alert, ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { Alert, ActivityIndicator, View, Text, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CameraScreen } from './components/screens/CameraScreen';
 import { ContactForm } from './components/business/ContactForm';
 import { ContactList } from './components/screens/ContactList';
@@ -33,6 +34,9 @@ const Stack = createStackNavigator();
 
 // Styles defined before component
 const styles = StyleSheet.create({
+  gestureHandlerRoot: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -122,8 +126,17 @@ export default function App() {
         setCurrentUser(user);
         console.log('✅ Auth state changed: User logged in');
 
-        // Reload contacts after explicit login
-        await loadContacts();
+        // CRITICAL FIX: Sync from cloud then reload contacts after explicit login
+        try {
+          console.log('🔄 Syncing contacts from cloud after login...');
+          await ContactService.syncContactsFromCloud();
+          await loadContacts();
+          console.log('✅ Contacts synced and reloaded after login');
+        } catch (syncError) {
+          console.error('⚠️ Failed to sync after login:', syncError);
+          // Still try to load local contacts as fallback
+          await loadContacts();
+        }
       } else {
         // User signed out
         setIsAuthenticated(false);
@@ -173,14 +186,27 @@ export default function App() {
           setIsAuthenticated(true);
           setCurrentUser(user);
           console.log('✅ User authenticated, sync enabled');
+          console.log('✅ User email:', user.email);
+          console.log('✅ User ID:', user.id);
 
           // AUTO-SYNC: Sync contacts from cloud now that auth is confirmed
-          await ContactService.syncContactsFromCloud();
+          try {
+            await ContactService.syncContactsFromCloud();
+            console.log('✅ Cloud sync completed successfully');
+          } catch (syncError) {
+            console.error('❌ Cloud sync failed:', syncError);
+            // Continue anyway - we'll use local contacts
+          }
+
+          // CRITICAL FIX: Reload contacts after cloud sync completes
+          console.log('🔄 Reloading contacts after cloud sync...');
+          await loadContacts();
         } else {
-          console.log('📱 Running in guest mode');
+          console.log('📱 Running in guest mode - auth error:', error?.message);
         }
       } catch (authError) {
-        console.log('📱 Auth check failed, continuing in offline mode');
+        console.error('📱 Auth check failed:', authError);
+        console.log('📱 Continuing in offline mode');
       }
 
     } catch (error) {
@@ -672,10 +698,11 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-        <NavigationContainer ref={navigationRef}>
-        <StatusBar style="auto" />
+    <GestureHandlerRootView style={styles.gestureHandlerRoot}>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
+          <NavigationContainer ref={navigationRef}>
+          <StatusBar style="auto" />
         <Tab.Navigator
         screenOptions={({ route, navigation }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -793,5 +820,6 @@ export default function App() {
         </NavigationContainer>
       </SafeAreaView>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
