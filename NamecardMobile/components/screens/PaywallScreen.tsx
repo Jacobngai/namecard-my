@@ -221,8 +221,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   const handlePlanChange = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
 
-    // Clear promo if switching to monthly (promo only for yearly)
-    if (plan === 'monthly' && promoApplied) {
+    // Clear promo if switching away from premium yearly (promo only for premium yearly)
+    if (plan !== 'yearly' && promoApplied) {
       setPromoApplied(false);
       setPromoCode('');
       setPromoError('');
@@ -282,20 +282,25 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             </Text>
           </View>
 
-          {/* Features Grid */}
+          {/* Features Grid - Show all features */}
           <View style={styles.featuresGrid}>
-            {IAP_CONFIG.FEATURES.slice(0, 6).map((feature) => (
+            {IAP_CONFIG.FEATURES.all.slice(0, 6).map((feature: any) => (
               <View key={feature.id} style={styles.featureItem}>
                 <View style={styles.featureIcon}>
                   <Ionicons name={feature.icon as any} size={24} color="#4A7A5C" />
                 </View>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
                 <Text style={styles.featureDescription}>{feature.description}</Text>
+                {feature.badge && (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureBadgeText}>{feature.badge}</Text>
+                  </View>
+                )}
               </View>
             ))}
           </View>
 
-          {/* Pricing Cards */}
+          {/* Pricing Cards - 2 Tier System */}
           <View style={styles.pricingSection}>
             <Text style={styles.sectionTitle}>Choose Your Plan</Text>
 
@@ -306,28 +311,67 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
               </View>
             ) : (
               <>
-                <PricingCard
-                  plan="yearly"
-                  price={finalYearlyPrice}
-                  originalPrice={promoApplied ? yearlyPrice : undefined}
-                  title="Yearly Premium"
-                  description="Best value - Save 20%"
-                  isSelected={selectedPlan === 'yearly'}
-                  onSelect={() => handlePlanChange('yearly')}
-                  disabled={isPurchasing || isRestoring || (isActive && subscription?.plan === 'yearly')}
-                  isCurrent={isActive && subscription?.plan === 'yearly'}
-                />
+                {/* 🟢 BASIC PLAN */}
+                <View style={styles.tierSection}>
+                  <View style={styles.tierHeader}>
+                    <Text style={styles.tierBadge}>🟢 BASIC</Text>
+                    <Text style={styles.tierSubtitle}>Scan & Save Contacts</Text>
+                  </View>
 
-                <PricingCard
-                  plan="monthly"
-                  price={monthlyPrice}
-                  title="Monthly Premium"
-                  description="Perfect for trying out"
-                  isSelected={selectedPlan === 'monthly'}
-                  onSelect={() => handlePlanChange('monthly')}
-                  disabled={isPurchasing || isRestoring || (isActive && subscription?.plan === 'monthly')}
-                  isCurrent={isActive && subscription?.plan === 'monthly'}
-                />
+                  <PricingCard
+                    plan="basic_yearly"
+                    price={IAP_CONFIG.PRICING.basic_yearly.usd}
+                    title="Basic Yearly"
+                    description="Save 17% - $5.95/month billed yearly"
+                    isSelected={selectedPlan === 'basic_yearly'}
+                    onSelect={() => handlePlanChange('basic_yearly')}
+                    disabled={isPurchasing || isRestoring}
+                    badge="SAVE 17%"
+                  />
+
+                  <PricingCard
+                    plan="basic_monthly"
+                    price={IAP_CONFIG.PRICING.basic_monthly.usd}
+                    title="Basic Monthly"
+                    description="Scan & save contacts"
+                    isSelected={selectedPlan === 'basic_monthly'}
+                    onSelect={() => handlePlanChange('basic_monthly')}
+                    disabled={isPurchasing || isRestoring}
+                  />
+                </View>
+
+                {/* 🟡 PREMIUM PLAN */}
+                <View style={styles.tierSection}>
+                  <View style={styles.tierHeader}>
+                    <Text style={styles.tierBadge}>🟡 PREMIUM</Text>
+                    <Text style={styles.tierSubtitle}>AI Chatbot + Analytics</Text>
+                  </View>
+
+                  <PricingCard
+                    plan="yearly"
+                    price={finalYearlyPrice}
+                    originalPrice={promoApplied ? yearlyPrice : undefined}
+                    title="Premium Yearly"
+                    description="Best value - $9.95/month billed yearly"
+                    isSelected={selectedPlan === 'yearly'}
+                    onSelect={() => handlePlanChange('yearly')}
+                    disabled={isPurchasing || isRestoring || (isActive && subscription?.plan === 'yearly')}
+                    isCurrent={isActive && subscription?.plan === 'yearly'}
+                    badge="BEST VALUE"
+                  />
+
+                  <PricingCard
+                    plan="monthly"
+                    price={monthlyPrice}
+                    title="Premium Monthly"
+                    description="Full AI insights & analytics"
+                    isSelected={selectedPlan === 'monthly'}
+                    onSelect={() => handlePlanChange('monthly')}
+                    disabled={isPurchasing || isRestoring || (isActive && subscription?.plan === 'monthly')}
+                    isCurrent={isActive && subscription?.plan === 'monthly'}
+                    badge="POPULAR"
+                  />
+                </View>
               </>
             )}
           </View>
@@ -572,6 +616,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     lineHeight: 16,
   },
+  featureBadge: {
+    backgroundColor: '#FFD700',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  featureBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
   pricingSection: {
     marginBottom: 24,
   },
@@ -640,6 +697,24 @@ const styles = StyleSheet.create({
     color: '#D1FAE5',
     fontSize: 14,
     marginTop: 8,
+  },
+  tierSection: {
+    marginBottom: 24,
+  },
+  tierHeader: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  tierBadge: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  tierSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
   },
   noPaymentContainer: {
     flexDirection: 'row',

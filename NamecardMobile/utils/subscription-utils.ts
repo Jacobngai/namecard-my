@@ -267,7 +267,13 @@ export const getSubscriptionRenewalMessage = (subscription: SubscriptionInfo | n
  * @returns Display name
  */
 export const getPlanDisplayName = (plan: SubscriptionPlan): string => {
-  return plan === 'monthly' ? 'Monthly' : 'Yearly';
+  switch (plan) {
+    case 'basic_monthly': return 'Basic Monthly';
+    case 'basic_yearly': return 'Basic Yearly';
+    case 'monthly': return 'Premium Monthly';
+    case 'yearly': return 'Premium Yearly';
+    default: return plan;
+  }
 };
 
 /**
@@ -277,7 +283,7 @@ export const getPlanDisplayName = (plan: SubscriptionPlan): string => {
  * @returns Duration text (e.g., "per month")
  */
 export const getPlanDurationText = (plan: SubscriptionPlan): string => {
-  return plan === 'monthly' ? 'per month' : 'per year';
+  return (plan === 'monthly' || plan === 'basic_monthly') ? 'per month' : 'per year';
 };
 
 /**
@@ -290,13 +296,16 @@ export const getPlanDurationText = (plan: SubscriptionPlan): string => {
  * @returns Value proposition string
  */
 export const getValueProposition = (plan: SubscriptionPlan, price: number): string => {
-  if (plan === 'monthly') {
+  if (plan === 'monthly' || plan === 'basic_monthly') {
     return formatPrice(price) + ' per month';
   }
 
-  // Yearly
+  // Yearly plans
   const monthlyEquivalent = calculateMonthlyEquivalent(price);
-  const savings = calculateSavings(IAP_CONFIG.PRICING.monthly.usd, price);
+  const monthlyBase = plan === 'basic_yearly'
+    ? IAP_CONFIG.PRICING.basic_monthly.usd
+    : IAP_CONFIG.PRICING.monthly.usd;
+  const savings = calculateSavings(monthlyBase, price);
 
   return `${formatPrice(monthlyEquivalent)}/month · Save ${savings}%`;
 };
@@ -308,8 +317,8 @@ export const getValueProposition = (plan: SubscriptionPlan, price: number): stri
  * @returns Badge text or null
  */
 export const getBestValueBadge = (plan: SubscriptionPlan): string | null => {
-  if (plan === 'yearly') {
-    return IAP_CONFIG.PRICING.yearly.badge || 'BEST VALUE';
+  if (plan === 'yearly' || plan === 'basic_yearly') {
+    return IAP_CONFIG.PRICING[plan].badge || 'BEST VALUE';
   }
   return null;
 };

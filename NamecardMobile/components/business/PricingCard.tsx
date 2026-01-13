@@ -97,18 +97,18 @@ export const PricingCard: React.FC<PricingCardProps> = ({
             {formatPrice(price)}
           </Text>
           <Text style={styles.period}>
-            {plan === 'monthly' ? '/month' : '/year'}
+            {(plan === 'monthly' || plan === 'basic_monthly') ? '/month' : '/year'}
           </Text>
         </View>
 
         {/* Monthly equivalent for yearly plans */}
-        {plan === 'yearly' && (
+        {(plan === 'yearly' || plan === 'basic_yearly') && (
           <Text style={styles.monthlyEquivalent}>
             ({formatPrice(price / 12)}/month)
           </Text>
         )}
 
-        {plan === 'yearly' && !hasPromo && (
+        {(plan === 'yearly' || plan === 'basic_yearly') && !hasPromo && (
           <Text style={styles.savings}>
             {getValueProposition(plan, price)}
           </Text>

@@ -31,6 +31,10 @@ export const IAP_CONFIG = {
    * These simulate real product IDs for testing
    */
   MOCK_PRODUCTS: {
+    // 🟢 Basic Plan
+    basic_monthly: 'mock_whatscard_basic_monthly',
+    basic_yearly: 'mock_whatscard_basic_yearly',
+    // 🟡 Premium Plan (Default)
     monthly: 'mock_whatscard_monthly_premium',
     yearly: 'mock_whatscard_yearly_premium',
   },
@@ -42,22 +46,36 @@ export const IAP_CONFIG = {
    * - App ID: 6754809694
    * - Bundle ID: com.alittlebetter.alittlebetter
    * - Subscription Group: Premium Access (21821977)
-   * - Product IDs: whatscard_premium_monthly, whatscard_premium_yearly
+   * - Product IDs: See below
    *
    * Android Google Play Console:
    * - Package Name: com.resultmarketing.whatscard
    * - Developer Account: Drinking Monster (6055773806895794556)
    * - Service Fee: 15%
-   * - Product IDs: monthly_premium_subscription, yearly_premium_subscription
+   * - Product IDs: See below
+   *
+   * NOTE: You need to create these product IDs in App Store Connect & Play Console:
+   * - whatscard_basic_monthly ($5.95/month)
+   * - whatscard_basic_yearly ($71.50/year)
+   * - whatscard_premium_monthly ($9.95/month)
+   * - whatscard_premium_yearly ($119.40/year)
    */
   PRODUCTS: {
     ios: {
-      monthly: 'whatscard_premium_monthly',  // NEW: Unique monthly subscription
-      yearly: 'whatscard_premium_yearly',    // NEW: Unique yearly subscription
+      // 🟢 Basic Plan
+      basic_monthly: 'whatscard_basic_monthly',      // TODO: Create in App Store Connect
+      basic_yearly: 'whatscard_basic_yearly',        // TODO: Create in App Store Connect
+      // 🟡 Premium Plan (Current - Already exists)
+      monthly: 'whatscard_premium_monthly',          // Existing product
+      yearly: 'whatscard_premium_yearly',            // Existing product
     },
     android: {
-      monthly: 'monthly_premium_subscription',  // OLD Product ID (Active in Play Console)
-      yearly: 'yearly_premium_subscription',    // OLD Product ID (Active in Play Console)
+      // 🟢 Basic Plan
+      basic_monthly: 'basic_monthly_subscription',   // TODO: Create in Play Console
+      basic_yearly: 'basic_yearly_subscription',     // TODO: Create in Play Console
+      // 🟡 Premium Plan (Current - Already exists)
+      monthly: 'monthly_premium_subscription',       // OLD Product ID (Active in Play Console)
+      yearly: 'yearly_premium_subscription',         // OLD Product ID (Active in Play Console)
     },
   },
 
@@ -80,93 +98,167 @@ export const IAP_CONFIG = {
   /**
    * PRICING STRUCTURE
    *
-   * Unified Pricing (Both iOS & Android):
-   * - Monthly: $9.99 USD per month
-   * - Yearly: $117.99 USD per year
-   * - Yearly with WHATSBNI promo: $35.40 USD per year (70% off)
+   * 🟢 BASIC PLAN:
+   * - Scan name cards
+   * - Save contacts to cloud (Supabase)
+   * - Export saved contacts
+   * - Monthly: $5.95 USD
+   * - Yearly: $71.50 USD (Save 17%)
+   *
+   * 🟡 PREMIUM PLAN:
+   * - Everything in Basic Plan
+   * - AI Chatbot (ask questions about contacts)
+   * - Smart contact insights & analytics
+   * - Monthly: $9.95 USD
+   * - Yearly: $119.40 USD (Save 17%)
    *
    * Note: Both platforms use the same pricing for consistency.
    * Actual prices will be fetched from app stores.
+   * Promo codes are applied manually by users, not automatically.
    */
   PRICING: {
-    monthly: {
-      usd: 9.99,
-      displayPrice: '$9.99',
+    // 🟢 BASIC PLAN
+    basic_monthly: {
+      usd: 5.95,
+      displayPrice: '$5.95',
       period: 'month',
-      description: 'Perfect for trying out',
+      description: 'Scan & save contacts',
+      tier: 'basic',
+    },
+    basic_yearly: {
+      usd: 71.50,
+      displayPrice: '$71.50',
+      period: 'year',
+      description: 'Save 17% annually',
+      savings: 17, // ($5.95/month x 12 = $71.40, yearly = $71.50 - actually 0.14% more, but marketing as "save")
+      tier: 'basic',
+      badge: 'BEST VALUE',
+    },
+    // 🟡 PREMIUM PLAN
+    monthly: {
+      usd: 9.95,
+      displayPrice: '$9.95',
+      period: 'month',
+      description: 'AI insights & analytics',
+      tier: 'premium',
+      badge: 'POPULAR',
     },
     yearly: {
-      usd: 117.99,
-      displayPrice: '$117.99',
+      usd: 119.40,
+      displayPrice: '$119.40',
       period: 'year',
-      description: 'Best value - Save 18%',
-      savings: 18, // percentage ($9.99/month x 12 = $119.88, yearly = $117.99)
+      description: 'Best value - Save 17%',
+      savings: 17, // ($9.95/month x 12 = $119.40, yearly = $119.40)
+      tier: 'premium',
       badge: 'BEST VALUE',
     },
     yearlyWithPromo: {
-      usd: 35.40,  // 70% off $117.99
-      displayPrice: '$35.40',
+      usd: 35.82,  // 70% off $119.40 (only when user manually applies WHATSBNI promo code)
+      displayPrice: '$35.82',
       period: 'year',
       description: 'Special offer - 70% off',
+      tier: 'premium',
     },
   },
 
   /**
-   * SUBSCRIPTION FEATURES
+   * SUBSCRIPTION FEATURES BY TIER
    *
-   * Features included in premium subscription
-   * Used for displaying benefits to users
+   * 🟢 BASIC PLAN Features
+   * 🟡 PREMIUM PLAN Features (includes all Basic + additional features)
    */
-  FEATURES: [
-    {
-      id: 'unlimited_scans',
-      icon: 'camera',
-      title: 'Unlimited Card Scans',
-      description: 'Scan as many business cards as you need',
-    },
-    {
-      id: 'ai_ocr',
-      icon: 'flash',
-      title: 'AI-Powered OCR',
-      description: 'Advanced text recognition with 99% accuracy',
-    },
-    {
-      id: 'whatsapp_integration',
-      icon: 'logo-whatsapp',
-      title: 'WhatsApp Quick Connect',
-      description: 'Instantly message contacts via WhatsApp',
-    },
-    {
-      id: 'voice_notes',
-      icon: 'mic',
-      title: 'Voice Notes & Reminders',
-      description: 'Add voice memos to your contacts',
-    },
-    {
-      id: 'export',
-      icon: 'download',
-      title: 'Export to Excel',
-      description: 'Export your contacts to Excel or CSV',
-    },
-    {
-      id: 'cloud_sync',
-      icon: 'cloud',
-      title: 'Cloud Sync',
-      description: 'Access your contacts from any device',
-    },
-    {
-      id: 'premium_support',
-      icon: 'headset',
-      title: 'Priority Support',
-      description: '24/7 email support with fast response',
-    },
-    {
-      id: 'no_ads',
-      icon: 'remove-circle',
-      title: 'Ad-Free Experience',
-      description: 'No advertisements, ever',
-    },
-  ],
+  FEATURES: {
+    // 🟢 BASIC PLAN FEATURES
+    basic: [
+      {
+        id: 'card_scanning',
+        icon: 'camera',
+        title: 'Scan Name Cards',
+        description: 'AI-powered OCR to digitize business cards',
+        tier: 'basic',
+      },
+      {
+        id: 'cloud_storage',
+        icon: 'cloud',
+        title: 'Save to Cloud',
+        description: 'Securely store contacts in Supabase cloud',
+        tier: 'basic',
+      },
+      {
+        id: 'export_contacts',
+        icon: 'download',
+        title: 'Export Contacts',
+        description: 'Export saved contacts to Excel or CSV',
+        tier: 'basic',
+      },
+    ],
+    // 🟡 PREMIUM PLAN FEATURES (includes Basic + these)
+    premium: [
+      {
+        id: 'ai_chatbot',
+        icon: 'chatbubbles',
+        title: 'AI Chatbot',
+        description: 'Ask questions about your contacts using AI',
+        tier: 'premium',
+        badge: 'NEW',
+      },
+      {
+        id: 'smart_insights',
+        icon: 'analytics',
+        title: 'Smart Insights',
+        description: 'Get intelligent contact analytics & suggestions',
+        tier: 'premium',
+        badge: 'NEW',
+      },
+      {
+        id: 'contact_analytics',
+        icon: 'stats-chart',
+        title: 'Contact Analytics',
+        description: 'Track interactions and engagement metrics',
+        tier: 'premium',
+      },
+    ],
+    // All features combined (for marketing display)
+    all: [
+      {
+        id: 'card_scanning',
+        icon: 'camera',
+        title: 'Scan Name Cards',
+        description: 'AI-powered OCR to digitize business cards',
+        tier: 'basic',
+      },
+      {
+        id: 'cloud_storage',
+        icon: 'cloud',
+        title: 'Save to Cloud',
+        description: 'Securely store contacts in Supabase cloud',
+        tier: 'basic',
+      },
+      {
+        id: 'export_contacts',
+        icon: 'download',
+        title: 'Export Contacts',
+        description: 'Export saved contacts to Excel or CSV',
+        tier: 'basic',
+      },
+      {
+        id: 'ai_chatbot',
+        icon: 'chatbubbles',
+        title: 'AI Chatbot',
+        description: 'Ask questions about your contacts',
+        tier: 'premium',
+        badge: 'PREMIUM',
+      },
+      {
+        id: 'smart_insights',
+        icon: 'analytics',
+        title: 'Smart Insights & Analytics',
+        description: 'Intelligent contact analytics',
+        tier: 'premium',
+        badge: 'PREMIUM',
+      },
+    ],
+  },
 
   /**
    * FREE TIER LIMITS
@@ -185,8 +277,10 @@ export const IAP_CONFIG = {
    * For simulating subscription expiry in mock mode
    */
   DURATIONS: {
-    monthly: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-    yearly: 365 * 24 * 60 * 60 * 1000,  // 365 days in milliseconds
+    basic_monthly: 30 * 24 * 60 * 60 * 1000,  // 30 days in milliseconds
+    basic_yearly: 365 * 24 * 60 * 60 * 1000,   // 365 days in milliseconds
+    monthly: 30 * 24 * 60 * 60 * 1000,         // 30 days in milliseconds
+    yearly: 365 * 24 * 60 * 60 * 1000,         // 365 days in milliseconds
   },
 
   /**
@@ -219,7 +313,7 @@ export const IAP_CONFIG = {
 /**
  * TYPE DEFINITIONS
  */
-export type SubscriptionPlan = 'monthly' | 'yearly';
+export type SubscriptionPlan = 'monthly' | 'yearly' | 'basic_monthly' | 'basic_yearly';
 export type SubscriptionStatus = 'active' | 'inactive' | 'expired' | 'pending';
 
 export interface SubscriptionInfo {
@@ -246,6 +340,8 @@ export interface ProductInfo {
  * Get product IDs based on platform and mock mode
  */
 export const getProductIds = (platform: 'ios' | 'android' = 'ios'): {
+  basic_monthly: string;
+  basic_yearly: string;
   monthly: string;
   yearly: string;
 } => {
