@@ -126,35 +126,35 @@ export const IAP_CONFIG = {
       tier: 'basic',
     },
     basic_yearly: {
-      usd: 71.50,
-      displayPrice: '$71.50',
+      usd: 71.99,
+      displayPrice: '$71.99',
       period: 'year',
       description: 'Save 17% annually',
-      savings: 17, // ($5.95/month x 12 = $71.40, yearly = $71.50 - actually 0.14% more, but marketing as "save")
+      savings: 17, // ($5.95/month x 12 = $71.40, yearly = $71.99)
       tier: 'basic',
       badge: 'BEST VALUE',
     },
     // 🟡 PREMIUM PLAN
     monthly: {
-      usd: 9.95,
-      displayPrice: '$9.95',
+      usd: 9.99,
+      displayPrice: '$9.99',
       period: 'month',
       description: 'AI insights & analytics',
       tier: 'premium',
       badge: 'POPULAR',
     },
     yearly: {
-      usd: 119.40,
-      displayPrice: '$119.40',
+      usd: 119.99,
+      displayPrice: '$119.99',
       period: 'year',
       description: 'Best value - Save 17%',
-      savings: 17, // ($9.95/month x 12 = $119.40, yearly = $119.40)
+      savings: 17, // ($9.99/month x 12 = $119.88, yearly = $119.99)
       tier: 'premium',
       badge: 'BEST VALUE',
     },
     yearlyWithPromo: {
-      usd: 35.82,  // 70% off $119.40 (only when user manually applies WHATSBNI promo code)
-      displayPrice: '$35.82',
+      usd: 36.00,  // 70% off $119.99 (only when user manually applies WHATSBNI promo code)
+      displayPrice: '$36.00',
       period: 'year',
       description: 'Special offer - 70% off',
       tier: 'premium',
